@@ -1,0 +1,131 @@
+<style>
+/* Layout: the terrain is a floating relief model (沙盤) filling the screen; a temple-plaque title sits top-left,
+   view tools top-right, and a bottom tray holds the place list and the selected place's card. */
+:root {
+  --sky-1: #d6e2e0;
+  --sky-2: #f1f4f1;
+  --ink: #1c2a2b;
+  --muted: #566664;
+  --panel: rgba(249, 251, 249, 0.96);
+  --panel-solid: #f9fbf9;
+  --line: rgba(28, 42, 43, 0.14);
+  --shadow: 0 6px 24px rgba(20, 35, 35, 0.16), 0 1px 3px rgba(20, 35, 35, 0.12);
+  --cinnabar: #b5361e;   /* 朱砂: temples, primary action */
+  --gold: #9a6f12;       /* 金: check-in, ceremony */
+  --jade: #2e6b5a;       /* 山林: landmarks, peaks */
+  --indigo: #2c5c8f;     /* 停車 */
+  --plum: #7a3f73;       /* 活動 / 舞台 */
+  --on-pin: #ffffff;
+  --focus: #1f6fb2;
+  --font-display: "LXGW WenKai TC", "Kaiti TC", "BiauKai", "STKaiti", "DFKai-SB", serif;
+  --font-body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --sky-1: #0d1619; --sky-2: #19272a; --ink: #e3ece9; --muted: #9db0ac;
+    --panel: rgba(17, 26, 28, 0.95); --panel-solid: #141f22; --line: rgba(227, 236, 233, 0.14);
+    --shadow: 0 6px 24px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.4);
+    --cinnabar: #e0583b; --gold: #d3a443; --jade: #5fb89c; --indigo: #6fa3dc; --plum: #c07bb8;
+    --focus: #7db7ea; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --sky-1: #0d1619; --sky-2: #19272a; --ink: #e3ece9; --muted: #9db0ac;
+  --panel: rgba(17, 26, 28, 0.95); --panel-solid: #141f22; --line: rgba(227, 236, 233, 0.14);
+  --shadow: 0 6px 24px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.4);
+  --cinnabar: #e0583b; --gold: #d3a443; --jade: #5fb89c; --indigo: #6fa3dc; --plum: #c07bb8;
+  --focus: #7db7ea; color-scheme: dark;
+}
+
+[hidden] { display: none !important; }
+html { height: 100%; box-sizing: border-box; }
+*, *::before, *::after { box-sizing: inherit; }
+body { height: 100%; margin: 0; overflow: hidden; background: var(--sky-2); color: var(--ink); font-family: var(--font-body); }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+#app { position: relative; height: 100%; overflow: hidden; }
+#stage { position: absolute; inset: 0; background: linear-gradient(180deg, var(--sky-1) 0%, var(--sky-2) 62%); }
+#stage canvas { display: block; touch-action: none; outline: none; }
+#pins { position: absolute; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+
+/* ---------- pins ---------- */
+.pin { position: absolute; left: 0; top: 0; width: 0; height: 0; padding: 0; border: 0; background: none; pointer-events: auto; cursor: pointer; }
+.pin-body { position: absolute; left: 0; bottom: 0; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; transition: transform .18s ease; transform-origin: 50% 100%; }
+.pin-tag { display: flex; align-items: center; gap: 6px; padding: 3px 10px 3px 3px; border-radius: 999px; background: var(--panel-solid); box-shadow: var(--shadow); font-size: 13px; font-weight: 500; line-height: 1.2; white-space: nowrap; }
+.glyph { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--pin); color: var(--on-pin); font-family: var(--font-display); font-weight: 700; font-size: 13px; line-height: 1; }
+.pin-stem { width: 2px; height: 22px; background: var(--pin); }
+.pin-foot { width: 9px; height: 9px; margin-bottom: -4.5px; border-radius: 50%; background: var(--pin); box-shadow: 0 0 0 3px var(--panel-solid); }
+.pin:hover .pin-body, .pin:focus-visible .pin-body { transform: translateX(-50%) scale(1.06); }
+.pin.is-active .pin-body { transform: translateX(-50%) scale(1.12); }
+.pin.is-active .pin-tag { background: var(--pin); color: var(--on-pin); }
+.pin.is-active .glyph { background: var(--on-pin); color: var(--pin); }
+.pins-dim .pin:not(.is-active) { opacity: .55; }
+
+.t-temple { --pin: var(--cinnabar); }
+.t-landmark, .t-peak { --pin: var(--jade); }
+.t-checkin, .t-ceremony { --pin: var(--gold); }
+.t-parking { --pin: var(--indigo); }
+.t-toilet, .t-medical { --pin: var(--indigo); }
+.t-food, .t-stage, .t-booth { --pin: var(--plum); }
+
+/* ---------- HUD ---------- */
+.hud { position: absolute; inset: 0; z-index: 2; pointer-events: none; display: grid; grid-template-rows: auto 1fr auto; grid-template-columns: minmax(0, 1fr); gap: 12px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 14px 10px; }
+.hud > * { pointer-events: auto; }
+.hud-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; pointer-events: none; }
+.hud-top > * { pointer-events: auto; }
+
+.plaque { display: flex; align-items: stretch; gap: 12px; padding: 10px 16px 10px 10px; background: var(--panel); border-radius: 12px; box-shadow: var(--shadow); min-width: 0; }
+.seal { flex: none; width: 46px; display: grid; place-items: center; border-radius: 6px; background: var(--cinnabar); color: var(--on-pin); font-family: var(--font-display); font-weight: 700; font-size: 17px; line-height: 1.05; writing-mode: vertical-rl; letter-spacing: .08em; padding-block: 6px; }
+.plaque-text { min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
+.eyebrow { margin: 0; font-size: 11px; letter-spacing: .14em; color: var(--muted); }
+.plaque h1 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: clamp(21px, 5.4vw, 28px); line-height: 1.15; letter-spacing: .04em; text-wrap: balance; }
+.plaque .sub { margin: 0; font-size: 12.5px; color: var(--muted); }
+
+.tools { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+.tool { display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); box-shadow: var(--shadow); cursor: pointer; font-size: 13px; font-weight: 500; white-space: nowrap; }
+.tool:hover { border-color: var(--muted); }
+.tool svg { width: 16px; height: 16px; flex: none; }
+.compass { width: 44px; height: 44px; padding: 0; justify-content: center; border-radius: 50%; }
+.compass svg { width: 30px; height: 30px; transition: none; }
+
+.tray { justify-self: center; width: min(100%, 680px); min-width: 0; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.tray > * { pointer-events: auto; }
+.card { background: var(--panel); border-radius: 14px; box-shadow: var(--shadow); padding: 14px 16px 14px; display: grid; gap: 8px; }
+.card-head { display: flex; align-items: flex-start; gap: 10px; }
+.card-head .glyph { width: 30px; height: 30px; font-size: 16px; margin-top: 2px; }
+.card-title { flex: 1; min-width: 0; }
+.card h2 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 22px; line-height: 1.2; letter-spacing: .03em; }
+.card .meta { margin: 2px 0 0; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.card .note { margin: 0; font-size: 14.5px; line-height: 1.65; max-width: 62ch; }
+.close { flex: none; width: 34px; height: 34px; border: 0; border-radius: 50%; background: transparent; cursor: pointer; display: grid; place-items: center; color: var(--muted); }
+.close:hover { background: var(--line); }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 999px; font-size: 13.5px; font-weight: 500; text-decoration: none; cursor: pointer; border: 1px solid var(--line); background: transparent; color: var(--ink); }
+.btn.primary { background: var(--cinnabar); border-color: var(--cinnabar); color: var(--on-pin); }
+.btn svg { width: 14px; height: 14px; }
+
+.places { min-width: 0; background: var(--panel); border-radius: 14px; box-shadow: var(--shadow); padding: 8px; }
+.chips { display: flex; gap: 6px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: thin; padding: 2px; }
+.chip { flex: none; scroll-snap-align: start; display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px 0 5px; border: 1px solid var(--line); border-radius: 999px; background: transparent; cursor: pointer; font-size: 13.5px; white-space: nowrap; }
+.chip:hover { border-color: var(--muted); }
+.chip.is-active { background: var(--pin); border-color: var(--pin); color: var(--on-pin); }
+.chip.is-active .glyph { background: var(--on-pin); color: var(--pin); }
+.chip-group { flex: none; align-self: center; font-size: 11px; letter-spacing: .12em; color: var(--muted); padding: 0 4px 0 6px; }
+.chip.pending { border-style: dashed; color: var(--muted); cursor: default; padding-left: 12px; }
+.foot { display: flex; justify-content: space-between; gap: 6px 12px; flex-wrap: wrap; padding: 6px 6px 0; font-size: 11px; color: var(--muted); }
+
+.overlay { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
+.overlay p { margin: 0; padding: 10px 16px; border-radius: 999px; background: var(--panel); box-shadow: var(--shadow); font-size: 14px; }
+
+@media (max-width: 520px) {
+  .plaque { padding: 8px 12px 8px 8px; gap: 10px; }
+  .seal { width: 38px; font-size: 15px; }
+  .tool .tool-label { display: none; }
+  .tool { width: 40px; height: 40px; padding: 0; justify-content: center; }
+  .compass { width: 44px; height: 44px; }
+  .card .note { font-size: 14px; }
+}
+@media (prefers-reduced-motion: reduce) { .pin-body { transition: none; } }
+</style>
