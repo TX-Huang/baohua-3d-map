@@ -22,6 +22,10 @@
 .card-head .glyph.letter { font-size: 15px; }
 .tool[aria-pressed="true"] { background: var(--ink); color: var(--panel-solid); border-color: var(--ink); }
 .card .todo { color: var(--muted); font-size: 13px; margin: 0; }
+.staff { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+.staff-label { font-size: 12px; letter-spacing: .12em; color: var(--muted); }
+.staff-list { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.staff-list li { padding: 3px 11px; border: 1px solid var(--line); border-radius: 999px; font-size: 14px; line-height: 1.5; }
 </style>
 
 <div id="app">
@@ -77,6 +81,10 @@
         </div>
         <p class="note" id="cardNote"></p>
         <p class="todo" id="cardTodo" hidden>名稱和用途待補。</p>
+        <div class="staff" id="cardStaff" hidden>
+          <span class="staff-label">工作人員</span>
+          <ul class="staff-list" id="cardStaffList"></ul>
+        </div>
       </article>
       <nav class="places" aria-label="地點清單">
         <div class="chips" id="chips"></div>
@@ -100,6 +108,12 @@
    GLYPHS 是標籤圓圈裡的那一個字。 */
 const NAMES = { A: '大木屋', B: '主殿', D: '廚房', E: '宿舍', I: '小木屋', J: '水塔', P1: '遊覽車停車場', P2: '主殿廣場' };
 const GLYPHS = { A: '屋', B: '殿', D: '廚', E: '宿', I: '屋', J: '水', P1: '停', P2: '場' };
+/* ====== 工作人員：每個地點負責的人，一個名字一格 ====== */
+const STAFF = {
+  P1: ['鉑宸', 'Chris', '黃亦修', '黃宗祥'],
+  P2: ['陶明潔', '李函紋'],
+  reg: ['莛茜'],
+};
 const MAIN_HALL = 'B';
 const OPEN_SHEDS = {};     // 只有屋頂和柱子、沒有牆的鐵皮棚（目前沒有）
 const NOTES = {
@@ -635,6 +649,10 @@ function select(id) {
   document.getElementById('cardMeta').textContent = bits.join(' · ');
   document.getElementById('cardNote').textContent = p.note;
   document.getElementById('cardTodo').hidden = p.named;
+  const staff = STAFF[p.id] || [];
+  const staffList = document.getElementById('cardStaffList');
+  staffList.replaceChildren(...staff.map(n => Object.assign(document.createElement('li'), { textContent: n })));
+  document.getElementById('cardStaff').hidden = staff.length === 0;
   card.hidden = false;
   try { history.replaceState(null, '', '#' + id); } catch (e) {}
   const sph = new THREE.Spherical().setFromVector3(camera.position.clone().sub(controls.target));
