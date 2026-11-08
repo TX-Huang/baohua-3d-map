@@ -26,6 +26,68 @@
 .staff-label { font-size: 12px; letter-spacing: .12em; color: var(--muted); }
 .staff-list { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .staff-list li { padding: 3px 11px; border: 1px solid var(--line); border-radius: 999px; font-size: 14px; line-height: 1.5; }
+.t-path { --pin: var(--plum); }
+/* ---------- edit mode ---------- */
+.editbar { background: var(--panel); border-radius: 14px; box-shadow: var(--shadow); padding: 8px; display: grid; gap: 6px; min-width: 0; }
+.editbar-row { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: thin; padding: 2px; align-items: center; min-width: 0; }
+.edit-badge { flex: none; font-size: 11.5px; letter-spacing: .1em; color: var(--on-pin); background: var(--cinnabar); border-radius: 999px; padding: 4px 10px; }
+.ebtn { flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--ink); cursor: pointer; font-size: 13.5px; white-space: nowrap; }
+.ebtn:hover { border-color: var(--muted); }
+.ebtn:disabled { opacity: .45; cursor: default; }
+.ebtn.primary { background: var(--cinnabar); border-color: var(--cinnabar); color: var(--on-pin); font-weight: 500; }
+.ebtn.danger { color: var(--cinnabar); border-color: var(--cinnabar); }
+.edit-status-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 0 4px; font-size: 12px; color: var(--muted); }
+.edit-status.dirty { color: var(--gold); font-weight: 500; }
+.linkish { border: 0; background: none; padding: 0; color: var(--muted); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; font-size: 12px; }
+.drawbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; padding: 2px; }
+.drawbar p { margin: 0; font-size: 13.5px; font-weight: 500; }
+.drawbar-btns { display: flex; gap: 6px; }
+.editing .card { max-height: min(46vh, 460px); overflow: auto; overscroll-behavior: contain; }
+.edit-form { display: grid; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); min-width: 0; }
+.edit-form label, .edit-form fieldset { display: grid; gap: 4px; font-size: 12px; color: var(--muted); min-width: 0; margin: 0; }
+.edit-form fieldset { border: 0; padding: 0; }
+.edit-form legend { padding: 0; margin-bottom: 4px; }
+.frow { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 10px; min-width: 0; }
+.frow > .grow { flex: 1 1 9em; }
+.frow.end { justify-content: space-between; align-items: center; }
+.glyph-field { width: 5.2em; }
+.fhint, .flabel { font-size: 12px; color: var(--muted); }
+.edit-form input[type="text"], .edit-form textarea, .dlg-field input { font: inherit; font-size: 15px; color: var(--ink); background: var(--panel-solid); border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; width: 100%; min-width: 0; }
+.edit-form textarea { resize: vertical; line-height: 1.5; }
+.edit-form input[type="range"] { width: 100%; accent-color: var(--plum); }
+.edit-form output { color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
+.swatches > div { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.edit-form .swatch { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; border: 1px solid var(--line); border-radius: 999px; padding: 4px 11px 4px 5px; color: var(--ink); font-size: 13px; position: relative; }
+.swatch input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; z-index: 1; }
+.swatch i { width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--line); }
+.swatch:has(input:checked) { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.swatch:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; }
+.sw-red i { background: #b5361e; }
+.sw-yellow i { background: #e9c445; }
+.sw-white i { background: #f4f1ea; }
+.edit-form[data-kind="place"] [data-for]:not([data-for~="place"]),
+.edit-form[data-kind="item"] [data-for]:not([data-for~="item"]),
+.edit-form[data-kind="path"] [data-for]:not([data-for~="path"]) { display: none; }
+.editing .pin.movable { cursor: grab; }
+.editing .pin { touch-action: none; }
+.dragging, .dragging * { cursor: grabbing !important; }
+#pins.drawing .pin { pointer-events: none; opacity: .4; }
+.vhandle { position: absolute; left: 0; top: 0; width: 24px; height: 24px; margin: -12px 0 0 -12px; padding: 0; border-radius: 50%; border: 3px solid var(--plum); background: #fff; box-shadow: var(--shadow); cursor: grab; pointer-events: auto; touch-action: none; z-index: 100001; }
+.vhandle.dot { width: 14px; height: 14px; margin: -7px 0 0 -7px; border-width: 2px; pointer-events: none; }
+.toast { position: absolute; z-index: 5; left: 50%; top: max(14px, env(safe-area-inset-top, 0px)); transform: translateX(-50%); width: max-content; max-width: min(calc(100vw - 32px), 520px); padding: 10px 16px; border-radius: 12px; background: var(--ink); color: var(--panel-solid); box-shadow: var(--shadow); font-size: 14px; line-height: 1.55; pointer-events: none; }
+#tokenDialog { border: 0; border-radius: 16px; padding: 18px 20px; width: min(calc(100vw - 32px), 500px); background: var(--panel-solid); color: var(--ink); box-shadow: var(--shadow); }
+#tokenDialog::backdrop { background: rgba(10, 20, 20, .5); }
+#tokenDialog h2 { margin: 0 0 6px; font-family: var(--font-display); font-size: 21px; }
+#tokenDialog p { margin: 0 0 6px; font-size: 13.5px; color: var(--muted); line-height: 1.6; }
+#tokenDialog ol { margin: 8px 0 12px; padding-left: 1.4em; font-size: 14px; line-height: 1.65; }
+#tokenDialog a { color: var(--focus); }
+.dlg-field { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+.dlg-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+@media (max-width: 520px) {
+  .editing .card { max-height: 34vh; }
+  .editing .foot { display: none; }
+  .editbar { padding: 6px; }
+}
 </style>
 
 <div id="app">
@@ -68,6 +130,30 @@
     </div>
     <div class="hud-gap" aria-hidden="true"></div>
     <div class="tray">
+      <section class="editbar" id="editbar" hidden aria-label="編輯工具">
+        <div class="editbar-row" id="editbarRow">
+          <span class="edit-badge">編輯模式</span>
+          <button class="ebtn" type="button" data-add="table">＋ 桌子</button>
+          <button class="ebtn" type="button" data-add="tent">＋ 帳篷</button>
+          <button class="ebtn" type="button" data-add="marker">＋ 標記</button>
+          <button class="ebtn" type="button" id="drawPath">✎ 畫走道</button>
+          <button class="ebtn" type="button" id="undoBtn" disabled>↶ 復原</button>
+          <button class="ebtn primary" type="button" id="publishBtn">發布</button>
+          <button class="ebtn" type="button" id="exitEdit">離開編輯</button>
+        </div>
+        <div class="drawbar" id="drawbar" hidden>
+          <p id="drawHint"></p>
+          <div class="drawbar-btns">
+            <button class="ebtn" type="button" id="drawUndo">退一個點</button>
+            <button class="ebtn" type="button" id="drawCancel">取消</button>
+            <button class="ebtn primary" type="button" id="drawDone">完成</button>
+          </div>
+        </div>
+        <div class="edit-status-row">
+          <span class="edit-status" id="editStatus"></span>
+          <button class="linkish" type="button" id="forgetToken">換鑰匙</button>
+        </div>
+      </section>
       <article class="card" id="card" hidden aria-live="polite">
         <div class="card-head">
           <span class="glyph" id="cardGlyph"></span>
@@ -85,690 +171,73 @@
           <span class="staff-label">工作人員</span>
           <ul class="staff-list" id="cardStaffList"></ul>
         </div>
+        <form class="edit-form" id="editForm" hidden autocomplete="off">
+          <div class="frow">
+            <label class="grow">名稱<input type="text" name="name" maxlength="24"></label>
+            <label class="glyph-field" data-for="place item">圓圈字<input type="text" name="glyph" maxlength="2"></label>
+          </div>
+          <div class="frow" data-for="path">
+            <label class="grow">地上的字<input type="text" name="text" maxlength="12"></label>
+            <label class="grow"><span>寬度 <output id="widthOut"></output> 公尺</span><input type="range" name="width" min="0.8" max="8" step="0.2"></label>
+          </div>
+          <fieldset class="swatches" data-for="path">
+            <legend>顏色</legend>
+            <div>
+              <label class="swatch sw-red"><input type="radio" name="style" value="red"><i></i>紅毯</label>
+              <label class="swatch sw-yellow"><input type="radio" name="style" value="yellow"><i></i>黃色</label>
+              <label class="swatch sw-white"><input type="radio" name="style" value="white"><i></i>白色</label>
+              <button class="ebtn" type="button" id="flipPath">⇅ 字的方向對調</button>
+            </div>
+          </fieldset>
+          <label>說明<textarea name="note" rows="2"></textarea></label>
+          <label>工作人員（一行一個名字）<textarea name="staff" rows="3"></textarea></label>
+          <div class="frow" data-for="item">
+            <span class="flabel">方向</span>
+            <button class="ebtn" type="button" data-rot="-15">⟲ 左轉 15°</button>
+            <button class="ebtn" type="button" data-rot="15">⟳ 右轉 15°</button>
+          </div>
+          <div class="frow end" data-for="item path">
+            <span class="fhint">拖曳地圖上的標籤或圓點可以移動</span>
+            <button class="ebtn danger" type="button" id="deleteBtn">刪除</button>
+          </div>
+        </form>
       </article>
       <nav class="places" aria-label="地點清單">
         <div class="chips" id="chips"></div>
         <div class="foot">
           <span id="hint">拖曳旋轉 · 雙指縮放、平移</span>
-          <span>航照 © 內政部國土測繪中心 2023 · 地形 AWS Terrain Tiles · 建築依航照描繪，位置與高度為估計</span>
+          <span>航照 © 內政部國土測繪中心 2023 · 地形 AWS Terrain Tiles · 建築依航照與照片繪製，位置與高度為估計</span>
         </div>
       </nav>
     </div>
   </div>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <dialog id="tokenDialog" aria-labelledby="tokenTitle">
+    <h2 id="tokenTitle">發布需要一把 GitHub 鑰匙</h2>
+    <p>只要做一次。鑰匙只存在這台裝置的瀏覽器裡，不會放到網站上。</p>
+    <ol>
+      <li>打開 <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">GitHub 建立鑰匙的頁面</a>（要先登入 GitHub）。</li>
+      <li>Token name 填「寶華山地圖」，Expiration 選 90 days。</li>
+      <li>Repository access 選「Only select repositories」，再選 <b>baohua-3d-map</b>。</li>
+      <li>Permissions → Repository permissions → <b>Contents</b> 改成「Read and write」。</li>
+      <li>按 Generate token，複製 <code>github_pat_</code> 開頭的那串字，貼到下面。</li>
+    </ol>
+    <label class="dlg-field">鑰匙<input type="password" id="tokenInput" autocomplete="off" spellcheck="false" placeholder="github_pat_…"></label>
+    <div class="dlg-actions">
+      <button class="ebtn" type="button" id="tokenCancel">取消</button>
+      <button class="ebtn primary" type="button" id="tokenSave">儲存並發布</button>
+    </div>
+  </dialog>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js" integrity="sha384-vV17nr/rMaJqmeZkFUzXLpHdQ+ME5QHKdydaqqN+3Ga39RJlNrTatJxHwGV4ml2C" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js" integrity="sha384-I0DMsfimAPIqWT8lF+oA997gRgdUi3jhidoTq3fN0zmn35smXZukD01FLnsPRU9i" crossorigin="anonymous"></script>
+<script>/*__LAYOUT_CORE__*/</script>
+<script>window.LAYOUT_FALLBACK = /*__LAYOUT__*/null;</script>
 <script>/*__MAPDATA__*/</script>
 <script>
 (function () {
 'use strict';
-
-/* ====== 建築名稱：知道名字就填進來，空白就顯示「F 棟」這種代號 ======
-   GLYPHS 是標籤圓圈裡的那一個字。 */
-const NAMES = { A: '大木屋', B: '主殿', D: '廚房', E: '宿舍', I: '小木屋', J: '水塔', P1: '遊覽車停車場', P2: '主殿廣場' };
-const GLYPHS = { A: '屋', B: '殿', D: '廚', E: '宿', I: '屋', J: '水', P1: '停', P2: '場' };
-/* ====== 工作人員：每個地點負責的人，一個名字一格 ====== */
-const STAFF = {
-  P1: ['鉑宸', 'Chris', '黃亦修', '黃宗祥'],
-  P2: ['陶明潔', '李函紋', '李函蒨'],
-  reg: ['莛茜'],
-};
-const MAIN_HALL = 'B';
-const OPEN_SHEDS = {};     // 只有屋頂和柱子、沒有牆的鐵皮棚（目前沒有）
-const NOTES = {
-  A: '深灰色瓦頂、白色屋脊的長形木屋，西北端有一個淺色門廊，東側連著一間小側屋。',
-  B: '園區的主殿，白色長屋頂，沿著主殿廣場的東北側。',
-  D: '白色屋頂，在主殿廣場南端，再往南是宿舍。',
-  E: '園區最南端的大型平頂建築，屋頂上有一間白色小屋。',
-  I: '紅色屋頂、有白色條紋的長屋，在馬路南側。',
-  J: '遊覽車停車場西邊的圓形水塔。',
-  P1: '園區西北邊的大片水泥空地，遊覽車停這裡。南邊接華山產業道路，東北角接往山頂的路。',
-  P2: '主殿和大木屋之間的鋪面廣場，中間有一棵大樹，南端接廚房。',
-};
-const HOME_ID = 'P2';
-let needsRender = true;
-let topView = false;
-let photoMode = false;
-
-const D = window.MAPDATA;
-const G = D.grid, GEO = D.geo;
-const COLS = G.cols, ROWS = G.rows, STEP = G.step, W = G.width, DEP = G.depth, HMIN = G.hmin;
-const BASE_Y = -14;
-const H = (function () {
-  const bin = atob(G.b64); const u8 = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
-  const u16 = new Uint16Array(u8.buffer); const out = new Float32Array(u16.length);
-  for (let i = 0; i < u16.length; i++) out[i] = u16[i] / 100;     // metres above HMIN
-  return out;
-})();
-function yAt(x, z) {
-  const c = Math.min(Math.max((x + W / 2) / STEP, 0), COLS - 1.001);
-  const r = Math.min(Math.max((z + DEP / 2) / STEP, 0), ROWS - 1.001);
-  const c0 = Math.floor(c), r0 = Math.floor(r), fc = c - c0, fr = r - r0, i = r0 * COLS + c0;
-  return (H[i] * (1 - fc) + H[i + 1] * fc) * (1 - fr) + (H[i + COLS] * (1 - fc) + H[i + COLS + 1] * fc) * fr;
-}
-
-const stage = document.getElementById('stage');
-const pinLayer = document.getElementById('pins');
-const loading = document.getElementById('loading');
-if (!window.THREE || !THREE.OrbitControls) { loading.firstElementChild.textContent = '3D 元件載入失敗，請重新整理頁面。'; return; }
-let renderer;
-try { renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); }
-catch (err) { loading.firstElementChild.textContent = '這台裝置無法顯示 3D，請改用新版 Chrome 或 Safari。'; return; }
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-renderer.outputEncoding = THREE.sRGBEncoding;
-renderer.setClearColor(0x000000, 0);
-stage.appendChild(renderer.domElement);
-
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(40, 1, 1, 5000);
-const fog = new THREE.Fog(0xf1f4f1, 600, 2000);
-scene.fog = fog;
-scene.add(new THREE.HemisphereLight(0xf3f6ff, 0x5b4a38, 0.62));
-const sun = new THREE.DirectionalLight(0xfff3e0, 0.92);
-sun.position.set(-300, 420, -260);      // north-west light, matches the baked shadows
-scene.add(sun);
-const matCache = {};
-const mat = (c) => matCache[c] || (matCache[c] = new THREE.MeshLambertMaterial({ color: c }));
-
-/* ---------------- terrain ---------------- */
-const geo = new THREE.PlaneGeometry(W, DEP, COLS - 1, ROWS - 1);
-geo.rotateX(-Math.PI / 2);
-const pos = geo.attributes.position;
-for (let i = 0; i < pos.count; i++) pos.setY(i, H[i]);
-geo.computeVertexNormals();
-
-const TW = Math.min(4096, renderer.capabilities.maxTextureSize || 4096);
-const texCanvas = document.createElement('canvas');
-const modelTex = new THREE.CanvasTexture(texCanvas);
-modelTex.encoding = THREE.sRGBEncoding;
-modelTex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
-const photoTex = new THREE.TextureLoader().load(D.photo, () => { needsRender = true; });
-photoTex.encoding = THREE.sRGBEncoding;
-photoTex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
-
-const contourU = { value: 1 };
-const terrainMat = new THREE.MeshLambertMaterial({ map: modelTex });
-terrainMat.extensions = { derivatives: true };
-terrainMat.onBeforeCompile = (shader) => {
-  shader.uniforms.uHmin = { value: HMIN };
-  shader.uniforms.uContour = contourU;
-  shader.vertexShader = shader.vertexShader
-    .replace('#include <common>', '#include <common>\nuniform float uHmin; varying float vElev;')
-    .replace('#include <begin_vertex>', '#include <begin_vertex>\nvElev = position.y + uHmin;');
-  shader.fragmentShader = shader.fragmentShader
-    .replace('#include <common>', '#include <common>\nvarying float vElev; uniform float uContour;')
-    .replace('#include <map_fragment>', `#include <map_fragment>
-      float f5 = vElev / 5.0; float w5 = fwidth(f5);
-      float d5 = min(fract(f5), 1.0 - fract(f5));
-      float minor = (1.0 - smoothstep(0.0, w5 * 1.1, d5)) * (1.0 - smoothstep(0.15, 0.45, w5));
-      float f25 = vElev / 25.0; float w25 = fwidth(f25);
-      float d25 = min(fract(f25), 1.0 - fract(f25));
-      float major = (1.0 - smoothstep(0.0, w25 * 1.5, d25)) * (1.0 - smoothstep(0.25, 0.6, w25));
-      diffuseColor.rgb *= 1.0 - max(minor * 0.12, major * 0.26) * uContour;`);
-};
-const terrain = new THREE.Mesh(geo, terrainMat);
-scene.add(terrain);
-
-(function buildBlock() {
-  const edges = [[], [], [], []];
-  for (let c = 0; c < COLS; c++) edges[0].push([c, 0]);
-  for (let r = 0; r < ROWS; r++) edges[1].push([COLS - 1, r]);
-  for (let c = COLS - 1; c >= 0; c--) edges[2].push([c, ROWS - 1]);
-  for (let r = ROWS - 1; r >= 0; r--) edges[3].push([0, r]);
-  const P = [];
-  for (const e of edges) for (let k = 0; k < e.length - 1; k++) {
-    const [c1, r1] = e[k], [c2, r2] = e[k + 1];
-    const x1 = -W / 2 + c1 * STEP, z1 = -DEP / 2 + r1 * STEP, y1 = H[r1 * COLS + c1];
-    const x2 = -W / 2 + c2 * STEP, z2 = -DEP / 2 + r2 * STEP, y2 = H[r2 * COLS + c2];
-    P.push(x1, y1, z1, x1, BASE_Y, z1, x2, y2, z2, x2, y2, z2, x1, BASE_Y, z1, x2, BASE_Y, z2);
-  }
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
-  g.computeVertexNormals();
-  scene.add(new THREE.Mesh(g, new THREE.MeshLambertMaterial({ color: 0x6b5843, side: THREE.DoubleSide })));
-  const plate = new THREE.Mesh(new THREE.PlaneGeometry(W, DEP).rotateX(Math.PI / 2), mat(0x4a3c2e));
-  plate.position.y = BASE_Y; scene.add(plate);
-  const c = document.createElement('canvas'); c.width = c.height = 256;
-  const cg = c.getContext('2d'); const grd = cg.createRadialGradient(128, 128, 30, 128, 128, 128);
-  grd.addColorStop(0, 'rgba(0,0,0,0.28)'); grd.addColorStop(1, 'rgba(0,0,0,0)');
-  cg.fillStyle = grd; cg.fillRect(0, 0, 256, 256);
-  const sh = new THREE.Mesh(new THREE.PlaneGeometry(W * 1.6, DEP * 1.7).rotateX(-Math.PI / 2),
-    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false }));
-  sh.position.y = BASE_Y - 25; scene.add(sh);
-})();
-
-/* ---------------- buildings ---------------- */
-function gableGeometry(L, Wd, rh) {
-  const a = [-L / 2, 0, -Wd / 2], b = [L / 2, 0, -Wd / 2], c = [L / 2, 0, Wd / 2], d = [-L / 2, 0, Wd / 2];
-  const r0 = [-L / 2, rh, 0], r1 = [L / 2, rh, 0];
-  const tris = [a, r1, b, a, r0, r1, d, c, r1, d, r1, r0, a, d, r0, b, r1, c, a, b, c, a, c, d];
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute(tris.flat(), 3));
-  g.computeVertexNormals();
-  return g;
-}
-const tops = {};
-for (const b of D.buildings) {
-  const grp = new THREE.Group();
-  const y0 = b.y - HMIN;
-  if (OPEN_SHEDS[b.group]) {
-    // steel-frame shed: a concrete slab, posts every ~4 m along both long sides, no walls
-    const slab = new THREE.Mesh(new THREE.BoxGeometry(b.L, 2, b.W), mat('#cfc9bc'));
-    slab.position.y = y0 - 0.95; grp.add(slab);
-    const n = Math.max(2, Math.round(b.L / 4) + 1);
-    for (let k = 0; k < n; k++) for (const s of [-1, 1]) {
-      const post = new THREE.Mesh(new THREE.BoxGeometry(0.22, b.h, 0.22), mat('#7d8285'));
-      post.position.set(-b.L / 2 + 0.3 + k * (b.L - 0.6) / (n - 1), y0 + b.h / 2, s * (b.W / 2 - 0.3));
-      grp.add(post);
-    }
-  } else {
-    const wall = new THREE.Mesh(new THREE.BoxGeometry(b.L, b.h + 2, b.W), mat(b.wc));
-    wall.position.y = y0 + (b.h - 2) / 2;
-    grp.add(wall);
-  }
-  if (b.roof === 'gable') {
-    const ov = 0.6;
-    const roof = new THREE.Mesh(gableGeometry(b.L + ov * 2, b.W + ov * 2, b.rh), mat(b.rc));
-    roof.position.y = y0 + b.h; grp.add(roof);
-    if (b.ridge) {
-      const ridge = new THREE.Mesh(new THREE.BoxGeometry(b.L + ov * 2 + 0.2, 0.45, 0.7), mat(b.ridge));
-      ridge.position.y = y0 + b.h + b.rh; grp.add(ridge);
-    }
-    if (b.stripes) {
-      for (let k = 0; k < b.stripes; k++) {
-        const t = -b.L / 2 + (k + 0.5) * b.L / b.stripes;
-        for (const s of [-1, 1]) {
-          const slope = Math.atan2(b.rh, (b.W + ov * 2) / 2);
-          const strip = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.08, (b.W + ov * 2) / 2 / Math.cos(slope)), mat('#efece6'));
-          strip.position.set(t, y0 + b.h + b.rh / 2 + 0.06, s * (b.W + ov * 2) / 4);
-          strip.rotation.x = s * slope;
-          grp.add(strip);
-        }
-      }
-    }
-  } else {
-    const cap = new THREE.Mesh(new THREE.BoxGeometry(b.L + 0.3, 0.4, b.W + 0.3), mat(b.rc));
-    cap.position.y = y0 + b.h + 0.2; grp.add(cap);
-  }
-  grp.position.set(b.cx, 0, b.cz);
-  grp.rotation.y = -b.a;
-  scene.add(grp);
-  const top = y0 + b.h + (b.rh || 0.4);
-  if (!tops[b.group] || b.id === b.group) tops[b.group] = { x: b.cx, z: b.cz, y: top, b };
-}
-(function waterTank() {
-  // round tank on a low plinth with a shallow conical lid (dark lid seen in the aerial photo)
-  const p = D.pavilion, y0 = p.y - HMIN, grp = new THREE.Group();
-  const tankH = 4.5, lidH = 1.1;
-  const plinth = new THREE.Mesh(new THREE.CylinderGeometry(p.r + 0.6, p.r + 0.6, 2, 24), mat('#cfc9bc'));
-  plinth.position.y = y0 - 0.6; grp.add(plinth);
-  const tank = new THREE.Mesh(new THREE.CylinderGeometry(p.r, p.r, tankH, 32), mat('#8f9a96'));
-  tank.position.y = y0 + 0.4 + tankH / 2; grp.add(tank);
-  for (const h of [1.4, 2.9]) {
-    const band = new THREE.Mesh(new THREE.CylinderGeometry(p.r + 0.05, p.r + 0.05, 0.18, 32), mat('#6f7a77'));
-    band.position.y = y0 + 0.4 + h; grp.add(band);
-  }
-  const lid = new THREE.Mesh(new THREE.ConeGeometry(p.r + 0.15, lidH, 32), mat(p.rc));
-  lid.position.y = y0 + 0.4 + tankH + lidH / 2; grp.add(lid);
-  grp.position.set(p.cx, 0, p.cz); scene.add(grp);
-  tops.J = { x: p.cx, z: p.cz, y: y0 + 0.4 + tankH + lidH, b: { L: p.r * 2, W: p.r * 2, y: p.y, round: true } };
-})();
-for (const c of D.cars) {
-  const grp = new THREE.Group(), y0 = c.y - HMIN;
-  const body = new THREE.Mesh(new THREE.BoxGeometry(4.3, 0.9, 1.75), mat(c.c)); body.position.y = y0 + 0.75; grp.add(body);
-  const cab = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.7, 1.55), mat('#3b4248')); cab.position.set(-0.2, y0 + 1.5, 0); grp.add(cab);
-  grp.position.set(c.x, 0, c.z); grp.rotation.y = -(Math.PI * 0.73); scene.add(grp);
-}
-
-/* ---------------- event furniture ---------------- */
-// 登記處: one table with a red cloth and two chairs, in front of the main hall's end wall
-// that faces the road, where the road enters the plaza.
-const EVENT_SPOTS = [];
-(function registrationDesk() {
-  const b = D.buildings.find(o => o.id === MAIN_HALL);
-  const road = D.roads.find(r => r.id === 'main');
-  if (!b || !road) return;
-  const n = road.p.length, rx = road.p[n - 2], rz = road.p[n - 1];
-  const ux = Math.cos(b.a), uz = Math.sin(b.a);
-  const ends = [1, -1].map(s => ({ s, x: b.cx + s * ux * b.L / 2, z: b.cz + s * uz * b.L / 2 }));
-  const end = ends.sort((p, q) => Math.hypot(p.x - rx, p.z - rz) - Math.hypot(q.x - rx, q.z - rz))[0];
-  const out = 3.2;                                   // metres in front of the wall
-  const x = end.x + end.s * ux * out, z = end.z + end.s * uz * out, y0 = yAt(x, z);
-  const grp = new THREE.Group();
-  const top = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.76, 0.75), mat('#b5361e'));   // table under a red cloth
-  top.position.y = y0 + 0.38; grp.add(top);
-  const board = new THREE.Mesh(new THREE.BoxGeometry(1.84, 0.04, 0.79), mat('#f3efe6'));
-  board.position.y = y0 + 0.78; grp.add(board);
-  for (const s of [-0.45, 0.45]) {
-    const seat = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.45, 0.45), mat('#3d4246'));
-    seat.position.set(s, y0 + 0.23, -end.s * 0.75); grp.add(seat);
-    const back = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.5, 0.06), mat('#3d4246'));
-    back.position.set(s, y0 + 0.7, -end.s * 0.95); grp.add(back);
-  }
-  grp.position.set(x, 0, z);
-  grp.rotation.y = -b.a;            // table's long side runs along the end wall
-  grp.rotateY(Math.PI / 2);
-  scene.add(grp);
-  EVENT_SPOTS.push({ id: 'reg', kind: 'checkin', name: '登記處', glyph: '登', x, z, y: y0 + 1.2, near: true,
-    viewDir: [end.s * ux, end.s * uz],             // look at it from the road side, wall behind it
-    elev: Math.round(y0 + HMIN), size: '桌子約 1.8 × 0.75 公尺',
-    note: '活動登記的桌子，放在主殿靠馬路那一端的牆前，就在馬路進主殿廣場的入口旁。' });
-})();
-
-/* ---------------- trees ---------------- */
-const TREE_COLS = ['#3e6a39', '#4b7a3f', '#5a8946', '#355f38'];
-const treeGeo = new THREE.IcosahedronGeometry(1, 1);
-const trees = new THREE.InstancedMesh(treeGeo, new THREE.MeshLambertMaterial({ color: 0xffffff }), D.trees.length);
-(function placeTrees() {
-  const m = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), p = new THREE.Vector3(), col = new THREE.Color();
-  let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-  D.trees.forEach(([x, z, r, hf, v], i) => {
-    const hy = r * hf * 1.05;
-    p.set(x, yAt(x, z) + hy + 0.8, z);
-    s.set(r, hy, r);
-    q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), rnd() * Math.PI);
-    m.compose(p, q, s);
-    trees.setMatrixAt(i, m);
-    col.set(TREE_COLS[v]).offsetHSL((rnd() - 0.5) * 0.02, 0, (rnd() - 0.5) * 0.06);
-    trees.setColorAt(i, col);
-  });
-})();
-scene.add(trees);
-
-/* ---------------- ground texture ---------------- */
-function paintModel() {
-  const TH = Math.round(TW * DEP / W), ppm = TW / W;
-  texCanvas.width = TW; texCanvas.height = TH;
-  const g = texCanvas.getContext('2d');
-  const X = (x) => (x + W / 2) * ppm, Y = (z) => (z + DEP / 2) * ppm;
-  const path = (p, close) => { g.beginPath(); for (let i = 0; i < p.length; i += 2) { const x = X(p[i]), y = Y(p[i + 1]); i ? g.lineTo(x, y) : g.moveTo(x, y); } if (close) g.closePath(); };
-  let seed = 3; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-  const grain = (lo, hi) => {
-    const n = document.createElement('canvas'); n.width = n.height = 128;
-    const ng = n.getContext('2d'); const d = ng.createImageData(128, 128);
-    for (let i = 0; i < d.data.length; i += 4) { const v = lo + rnd() * (hi - lo); d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; }
-    ng.putImageData(d, 0, 0); return g.createPattern(n, 'repeat');
-  };
-  const multiplyGrain = (pat, alpha) => { g.save(); g.globalCompositeOperation = 'multiply'; g.globalAlpha = alpha; g.fillStyle = pat; g.fillRect(0, 0, TW, TH); g.restore(); };
-
-  // forest floor
-  g.fillStyle = '#577b48'; g.fillRect(0, 0, TW, TH);
-  multiplyGrain(grain(170, 255), 0.5);
-  // grass and scrub
-  g.save(); g.filter = 'blur(6px)';
-  for (const p of D.grass) { path(p, true); g.fillStyle = '#95b06c'; g.fill(); }
-  g.restore();
-  // plazas, plus paved patches without a label
-  const pavedAreas = D.plazas.concat((D.paved || []).map(p => ({ p })));
-  // kerb outlines first, then every fill on top: overlapping areas merge without inner lines
-  for (const pl of pavedAreas) { path(pl.p, true); g.lineWidth = 0.9 * ppm; g.strokeStyle = '#b9b3a6'; g.stroke(); }
-  for (const pl of pavedAreas) { path(pl.p, true); g.fillStyle = '#d3cec3'; g.fill(); }
-  g.save();
-  for (const pl of D.plazas) { path(pl.p, true); g.clip(); }
-  g.restore();
-  for (const pl of pavedAreas) {
-    g.save(); path(pl.p, true); g.clip();
-    g.strokeStyle = 'rgba(150,143,128,0.35)'; g.lineWidth = Math.max(1, 0.12 * ppm);
-    g.translate(TW / 2, TH / 2); g.rotate(-0.7);
-    for (let k = -TW; k < TW; k += 4 * ppm) { g.beginPath(); g.moveTo(k, -TW); g.lineTo(k, TW); g.stroke(); g.beginPath(); g.moveTo(-TW, k); g.lineTo(TW, k); g.stroke(); }
-    g.restore();
-  }
-  // roads
-  g.lineCap = 'round'; g.lineJoin = 'round';
-  for (const r of D.roads) { path(r.p); g.strokeStyle = r.kind === 'asphalt' ? '#d9d4c7' : '#a8a293'; g.lineWidth = (r.w + 1.0) * ppm; g.stroke(); }
-  const main = D.roads.find(r => r.id === 'main');
-  if (main) { // yellow-painted kerb along the hairpin by the temple, as in the aerial photo
-    const k = main.p.length; const sub = main.p.slice(k - 14);
-    path(sub); g.strokeStyle = '#e1b83a'; g.lineWidth = (main.w + 0.9) * ppm; g.stroke();
-  }
-  for (const r of D.roads) { path(r.p); g.strokeStyle = r.kind === 'asphalt' ? '#8b8c87' : '#c4beb0'; g.lineWidth = r.w * ppm; g.stroke(); }
-  multiplyGrain(grain(215, 255), 0.25);
-
-  // soft shadows (light from the north-west, so shadows fall south-east)
-  const soft = (x, z, rx, alpha) => {
-    const cx = X(x), cy = Y(z), R = rx * ppm;
-    const grd = g.createRadialGradient(cx, cy, R * 0.15, cx, cy, R);
-    grd.addColorStop(0, `rgba(20,35,20,${alpha})`); grd.addColorStop(1, 'rgba(20,35,20,0)');
-    g.fillStyle = grd; g.fillRect(cx - R, cy - R, R * 2, R * 2);
-  };
-  for (const [x, z, r, hf] of D.trees) soft(x + r * 0.55, z + r * 0.55, r * 1.35, 0.32 * Math.min(hf, 1.1));
-  for (const b of D.buildings) {
-    const k = (b.h + (b.rh || 0)) * 0.55;
-    for (let s = 1; s <= 6; s++) {
-      g.save(); g.translate(k * ppm * s / 6, k * ppm * s / 6); path(b.p, true);
-      g.fillStyle = 'rgba(25,30,25,0.07)'; g.fill(); g.restore();
-    }
-  }
-  { const p = D.pavilion; soft(p.cx + 2, p.cz + 2, p.r * 1.6, 0.35); }
-
-  // building footprints (visible at the eaves)
-  for (const b of D.buildings) { path(b.p, true); g.fillStyle = '#bdb5a5'; g.fill(); }
-
-  // labels painted on the ground
-  const label = (text, x, z, ang, size, color, weight = 500) => {
-    g.save(); g.translate(X(x), Y(z)); g.rotate(ang);
-    g.font = `${weight} ${size * ppm}px "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif`;
-    g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.lineWidth = size * ppm * 0.22; g.strokeStyle = 'rgba(255,255,255,0.85)'; g.lineJoin = 'round';
-    g.strokeText(text, 0, 0); g.fillStyle = color; g.fillText(text, 0, 0); g.restore();
-  };
-  const alongRoad = (r, frac, text, size, color, shift) => {
-    const p = r.p; let len = 0; const segs = [];
-    for (let i = 2; i < p.length; i += 2) { const l = Math.hypot(p[i] - p[i - 2], p[i + 1] - p[i - 1]); segs.push([i, l]); len += l; }
-    let acc = 0; const target = len * frac;
-    for (const [i, l] of segs) {
-      if (acc + l >= target) {
-        const t = (target - acc) / l, x = p[i - 2] + (p[i] - p[i - 2]) * t, z = p[i - 1] + (p[i + 1] - p[i - 1]) * t;
-        let a = Math.atan2(p[i + 1] - p[i - 1], p[i] - p[i - 2]);
-        if (a > Math.PI / 2) a -= Math.PI; if (a < -Math.PI / 2) a += Math.PI;
-        label(text, x - Math.sin(a) * shift, z + Math.cos(a) * shift, a, size, color);
-        return;
-      }
-      acc += l;
-    }
-  };
-  if (main) alongRoad(main, 0.36, '華 山 產 業 道 路', 2.6, '#4d4a42', 0);
-  const up = D.roads.find(r => r.id === 'up');
-  if (up) alongRoad(up, 0.55, '往寶華山頂', 2.4, '#4d4a42', -4.5);
-  { const [x, z] = D.edges.west; label('← 往牌樓・山下', x + 16, z - 8, 0.08, 2.8, '#3c3a34', 700); }
-
-  // scale bar, bottom-left corner
-  { const x0 = -W / 2 + 6, z0 = DEP / 2 - 6, seg = 10;
-    for (let k = 0; k < 5; k++) { g.fillStyle = k % 2 ? '#f6f3ea' : '#2c2b27'; g.fillRect(X(x0 + k * seg), Y(z0) - 0.6 * ppm, seg * ppm, 1.2 * ppm); }
-    g.strokeStyle = '#2c2b27'; g.lineWidth = Math.max(1, 0.15 * ppm); g.strokeRect(X(x0), Y(z0) - 0.6 * ppm, 5 * seg * ppm, 1.2 * ppm);
-    g.font = `500 ${2.2 * ppm}px "Noto Sans TC", sans-serif`; g.textBaseline = 'bottom'; g.fillStyle = '#f6f3ea';
-    g.textAlign = 'left'; g.fillText('0', X(x0), Y(z0) - 1.0 * ppm);
-    g.textAlign = 'right'; g.fillText('50 公尺', X(x0 + 5 * seg), Y(z0) - 1.0 * ppm);
-  }
-  modelTex.needsUpdate = true;
-  needsRender = true;
-}
-
-/* ---------------- places ---------------- */
-const POINTS = [];
-for (const id of Object.keys(tops).sort()) {
-  const t = tops[id];
-  const size = t.b.round ? `直徑約 ${Math.round(t.b.L)} 公尺` : `約 ${Math.round(t.b.L)} × ${Math.round(t.b.W)} 公尺`;
-  POINTS.push({ id, kind: id === MAIN_HALL ? 'hall' : 'bldg', x: t.x, z: t.z, y: t.y + 1, size, elev: Math.round(t.b.y) });
-}
-for (const pl of D.plazas) {
-  let sx = 0, sz = 0, n = 0;
-  for (let i = 0; i < pl.p.length; i += 2) { sx += pl.p[i]; sz += pl.p[i + 1]; n++; }
-  const x = sx / n, z = sz / n;
-  POINTS.push({ id: pl.id, kind: 'plaza', x, z, y: yAt(x, z) + 0.5, elev: Math.round(pl.y) });
-}
-for (const p of POINTS) {
-  p.isBldg = p.kind !== 'plaza';
-  p.named = !!NAMES[p.id];
-  p.name = NAMES[p.id] || (p.isBldg ? `${p.id} 棟` : `廣場 ${p.id.slice(1)}`);
-  p.glyph = GLYPHS[p.id] || (p.isBldg ? p.id : '場');
-  p.letterGlyph = p.isBldg && !GLYPHS[p.id];
-  p.note = NOTES[p.id] || '';
-  p.lon = GEO.lon0 + p.x / GEO.mLon; p.lat = GEO.lat0 - p.z / GEO.mLat;
-}
-for (const s of EVENT_SPOTS) {
-  Object.assign(s, { isBldg: false, named: true, letterGlyph: false, isEvent: true,
-    lon: GEO.lon0 + s.x / GEO.mLon, lat: GEO.lat0 - s.z / GEO.mLat });
-  POINTS.push(s);
-}
-const byId = Object.fromEntries(POINTS.map(p => [p.id, p]));
-
-/* ---------------- camera ---------------- */
-const controls = new THREE.OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true; controls.dampingFactor = 0.12; controls.rotateSpeed = 0.75;
-controls.minDistance = 25; controls.maxDistance = 900;
-controls.maxPolarAngle = THREE.MathUtils.degToRad(78);
-controls.screenSpacePanning = false;
-controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
-const deg = THREE.MathUtils.degToRad;
-const offsetFor = (d, polar, az) => new THREE.Vector3(d * Math.sin(polar) * Math.sin(az), d * Math.cos(polar), d * Math.sin(polar) * Math.cos(az));
-const homeTarget = (() => {      // middle of everything that is labelled
-  let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity, y = 0;
-  for (const p of POINTS) { x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); z0 = Math.min(z0, p.z); z1 = Math.max(z1, p.z); y += p.y; }
-  return new THREE.Vector3((x0 + x1) / 2, y / POINTS.length - 6, (z0 + z1) / 2);
-})();
-const HOME = { target: homeTarget, dist: 330, polar: deg(48), az: deg(-10) };
-function setView(v) { controls.target.copy(v.target); camera.position.copy(v.target).add(offsetFor(v.dist, v.polar, v.az)); controls.update(); }
-setView(HOME);
-
-let tween = null;
-const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-/* View changes travel along the orbit (angle, tilt, log-distance), not in a straight line,
-   so switching to top view or jumping to a place never dips toward the ground or bounces in and out. */
-function flyTo(target, offset, ms = 1000) {
-  zoomGoal = null;
-  if (reduceMotion) { controls.target.copy(target); camera.position.copy(target).add(offset); controls.update(); needsRender = true; return; }
-  const from = new THREE.Spherical().setFromVector3(camera.position.clone().sub(controls.target));
-  const to = new THREE.Spherical().setFromVector3(offset);
-  let dTheta = to.theta - from.theta; dTheta = Math.atan2(Math.sin(dTheta), Math.cos(dTheta));
-  tween = { t0: null, ms, fromT: controls.target.clone(), toT: target.clone(),
-            r0: Math.log(from.radius), r1: Math.log(to.radius), p0: from.phi, p1: to.phi, th0: from.theta, th1: from.theta + dTheta };
-}
-const tmpS = new THREE.Spherical(), tmpV = new THREE.Vector3();
-function stepTween(now) {
-  if (!tween) return false;
-  if (tween.t0 === null) tween.t0 = now;
-  const t = Math.min((now - tween.t0) / tween.ms, 1);
-  const e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-  controls.target.lerpVectors(tween.fromT, tween.toT, e);
-  tmpS.set(Math.exp(tween.r0 + (tween.r1 - tween.r0) * e), tween.p0 + (tween.p1 - tween.p0) * e, tween.th0 + (tween.th1 - tween.th0) * e);
-  camera.position.copy(controls.target).add(tmpV.setFromSpherical(tmpS));
-  if (t >= 1) tween = null;
-  return true;
-}
-controls.addEventListener('start', () => { tween = null; });
-
-/* Smooth wheel / trackpad zoom toward the point under the cursor.
-   (The stock control zooms a fixed 5% per wheel event, which is jumpy with a mouse and far too fast on a trackpad.) */
-let zoomGoal = null;
-const zoomAnchor = new THREE.Vector3();
-const zoomRay = new THREE.Raycaster(), zoomNdc = new THREE.Vector2(), zoomPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-function onWheel(e) {
-  e.preventDefault(); e.stopPropagation();
-  tween = null;
-  const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1);
-  const k = e.ctrlKey ? 0.012 : 0.0016;          // trackpad pinch arrives as ctrl + small wheel deltas
-  const cur = zoomGoal ?? camera.position.distanceTo(controls.target);
-  zoomGoal = THREE.MathUtils.clamp(cur * Math.exp(dy * k), controls.minDistance, controls.maxDistance);
-  const rect = renderer.domElement.getBoundingClientRect();
-  zoomNdc.set((e.clientX - rect.left) / rect.width * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
-  camera.updateMatrixWorld();
-  zoomRay.setFromCamera(zoomNdc, camera);
-  zoomPlane.constant = -controls.target.y;
-  if (!zoomRay.ray.intersectPlane(zoomPlane, zoomAnchor)) zoomAnchor.copy(controls.target);
-  zoomAnchor.x = Math.min(Math.max(zoomAnchor.x, -W / 2), W / 2);
-  zoomAnchor.z = Math.min(Math.max(zoomAnchor.z, -DEP / 2), DEP / 2);
-  needsRender = true;
-}
-for (const el of [stage, pinLayer]) el.addEventListener('wheel', onWheel, { capture: true, passive: false });
-const zoomOff = new THREE.Vector3();
-function stepZoom(dt) {
-  if (zoomGoal === null) return false;
-  zoomOff.copy(camera.position).sub(controls.target);
-  const r = zoomOff.length();
-  const a = 1 - Math.exp(-dt * 13);
-  const nr = Math.exp(Math.log(r) + (Math.log(zoomGoal) - Math.log(r)) * a);
-  const s = nr / r;
-  // scale camera and target about the anchor, so the ground under the cursor stays put
-  controls.target.sub(zoomAnchor).multiplyScalar(s).add(zoomAnchor);
-  camera.position.copy(controls.target).add(zoomOff.multiplyScalar(s));
-  if (Math.abs(zoomGoal - nr) < nr * 0.001) zoomGoal = null;
-  return true;
-}
-controls.addEventListener('change', () => {
-  const t = controls.target;
-  const cx = Math.min(Math.max(t.x, -W / 2), W / 2), cz = Math.min(Math.max(t.z, -DEP / 2), DEP / 2);
-  if (cx !== t.x || cz !== t.z) { camera.position.x += cx - t.x; camera.position.z += cz - t.z; t.x = cx; t.z = cz; }
-  needsRender = true;
-});
-
-/* ---------------- pins, chips, card ---------------- */
-const pinEls = new Map();
-const chipsEl = document.getElementById('chips');
-let activeId = null;
-function glyphSpan(p) { const s = document.createElement('span'); s.className = 'glyph' + (p.letterGlyph ? ' letter' : ''); s.textContent = p.glyph; s.setAttribute('aria-hidden', 'true'); return s; }
-for (const p of POINTS) {
-  const b = document.createElement('button');
-  b.type = 'button'; b.className = `pin t-${p.kind}` + (p.isBldg && !p.named ? ' compact' : ''); b.setAttribute('aria-label', p.name);
-  const body = document.createElement('span'); body.className = 'pin-body';
-  const tag = document.createElement('span'); tag.className = 'pin-tag';
-  tag.append(glyphSpan(p), Object.assign(document.createElement('span'), { className: 'pin-name', textContent: p.name }));
-  body.append(tag, Object.assign(document.createElement('span'), { className: 'pin-stem' }), Object.assign(document.createElement('span'), { className: 'pin-foot' }));
-  b.append(body);
-  b.addEventListener('click', () => select(p.id));
-  pinLayer.append(b); pinEls.set(p.id, b);
-}
-function addGroup(label) { const s = document.createElement('span'); s.className = 'chip-group'; s.textContent = label; chipsEl.append(s); }
-function addChip(p) {
-  const c = document.createElement('button'); c.type = 'button'; c.className = `chip t-${p.kind}`; c.dataset.id = p.id;
-  c.append(glyphSpan(p), document.createTextNode(p.name)); c.addEventListener('click', () => select(p.id)); chipsEl.append(c);
-}
-const rank = (p) => (p.kind === 'hall' ? 0 : p.named ? 1 : 2);
-if (EVENT_SPOTS.length) { addGroup('活動'); EVENT_SPOTS.forEach(addChip); }
-addGroup('建築'); POINTS.filter(p => p.isBldg).sort((a, b) => rank(a) - rank(b) || a.id.localeCompare(b.id)).forEach(addChip);
-addGroup('廣場'); POINTS.filter(p => !p.isBldg && !p.isEvent).forEach(addChip);
-
-const card = document.getElementById('card');
-const cardGlyph = document.getElementById('cardGlyph');
-function select(id) {
-  const p = byId[id]; if (!p) return;
-  activeId = id;
-  pinLayer.classList.add('pins-dim');
-  for (const [k, el] of pinEls) el.classList.toggle('is-active', k === id);
-  for (const c of chipsEl.querySelectorAll('.chip[data-id]')) c.classList.toggle('is-active', c.dataset.id === id);
-  const chip = chipsEl.querySelector(`.chip[data-id="${id}"]`);
-  if (chip) chip.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: reduceMotion ? 'auto' : 'smooth' });
-  cardGlyph.className = `glyph t-${p.kind}` + (p.letterGlyph ? ' letter' : ''); cardGlyph.textContent = p.glyph;
-  document.getElementById('cardName').textContent = p.name;
-  const bits = [p.isEvent ? '活動' : p.isBldg ? '建築' : '廣場'];
-  if (p.isBldg && p.named) bits.push(`代號 ${p.id}`);
-  if (p.size) bits.push(p.size);
-  bits.push(`海拔約 ${p.elev} 公尺`);
-  document.getElementById('cardMeta').textContent = bits.join(' · ');
-  document.getElementById('cardNote').textContent = p.note;
-  document.getElementById('cardTodo').hidden = p.named;
-  const staff = STAFF[p.id] || [];
-  const staffList = document.getElementById('cardStaffList');
-  staffList.replaceChildren(...staff.map(n => Object.assign(document.createElement('li'), { textContent: n })));
-  document.getElementById('cardStaff').hidden = staff.length === 0;
-  card.hidden = false;
-  try { history.replaceState(null, '', '#' + id); } catch (e) {}
-  const sph = new THREE.Spherical().setFromVector3(camera.position.clone().sub(controls.target));
-  const dist = p.near ? Math.min(Math.max(sph.radius, 26), 38) : Math.min(Math.max(sph.radius, 70), 130);
-  const polar = topView ? 0.001 : Math.min(Math.max(sph.phi, deg(40)), deg(62));
-  const theta = p.viewDir && !topView ? Math.atan2(p.viewDir[0], p.viewDir[1]) : sph.theta;
-  flyTo(new THREE.Vector3(p.x, p.y - (p.near ? 1 : 2), p.z), offsetFor(dist, polar, theta));
-  needsRender = true;
-}
-function deselect() {
-  activeId = null; card.hidden = true; pinLayer.classList.remove('pins-dim');
-  for (const el of pinEls.values()) el.classList.remove('is-active');
-  for (const c of chipsEl.querySelectorAll('.chip')) c.classList.remove('is-active');
-  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
-}
-document.getElementById('cardClose').addEventListener('click', deselect);
-
-/* tools */
-const viewBtn = document.getElementById('viewToggle');
-function setTop(on) {
-  topView = on; viewBtn.setAttribute('aria-pressed', String(on));
-}
-viewBtn.addEventListener('click', () => {
-  setTop(!topView);
-  const sph = new THREE.Spherical().setFromVector3(camera.position.clone().sub(controls.target));
-  flyTo(controls.target.clone(), offsetFor(topView ? Math.max(sph.radius, 260) : sph.radius, topView ? 0.001 : deg(55), topView ? 0 : sph.theta));
-});
-const photoBtn = document.getElementById('photoToggle');
-photoBtn.addEventListener('click', () => {
-  photoMode = !photoMode;
-  photoBtn.setAttribute('aria-pressed', String(photoMode));
-  terrainMat.map = photoMode ? photoTex : modelTex;
-  terrainMat.needsUpdate = true;
-  contourU.value = photoMode ? 0 : 1;
-  trees.visible = !photoMode;
-  needsRender = true;
-});
-document.getElementById('homeBtn').addEventListener('click', () => { setTop(false); flyTo(HOME.target.clone(), offsetFor(HOME.dist, HOME.polar, HOME.az)); });
-document.getElementById('compass').addEventListener('click', () => {
-  const sph = new THREE.Spherical().setFromVector3(camera.position.clone().sub(controls.target));
-  flyTo(controls.target.clone(), offsetFor(sph.radius, sph.phi, 0), 700);
-});
-const needle = document.getElementById('needle');
-const coarse = window.matchMedia('(pointer: coarse)').matches;
-document.getElementById('hint').textContent = coarse ? '單指拖曳旋轉 · 雙指縮放、平移 · 點字母看說明' : '左鍵拖曳旋轉 · 右鍵平移 · 滾輪縮放 · 點字母看說明';
-
-function applyTheme() { fog.color.set(getComputedStyle(document.documentElement).getPropertyValue('--sky-2').trim() || '#f1f4f1'); needsRender = true; }
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);
-new MutationObserver(applyTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-
-/* ---------------- render loop ---------------- */
-const v = new THREE.Vector3();
-function placePins() {
-  const w = stage.clientWidth, h = stage.clientHeight;
-  for (const p of POINTS) {
-    const el = pinEls.get(p.id);
-    v.set(p.x, p.y, p.z).project(camera);
-    const vis = v.z < 1 && v.x > -1.15 && v.x < 1.15 && v.y > -1.15 && v.y < 1.25;
-    if (el.hidden === vis) el.hidden = !vis;
-    if (!vis) continue;
-    el.style.transform = `translate3d(${((v.x + 1) / 2 * w).toFixed(1)}px, ${((1 - v.y) / 2 * h).toFixed(1)}px, 0)`;
-    const d = camera.position.distanceTo(v.set(p.x, p.y, p.z));
-    const zi = String(p.id === activeId ? 100000 : 50000 - Math.round(d));
-    if (el.style.zIndex !== zi) el.style.zIndex = zi;
-  }
-}
-function resize() {
-  const w = stage.clientWidth, h = stage.clientHeight;
-  renderer.setSize(w, h, false);
-  renderer.domElement.style.width = w + 'px'; renderer.domElement.style.height = h + 'px';
-  camera.aspect = w / Math.max(h, 1); camera.fov = w < h ? 52 : 40; camera.updateProjectionMatrix();
-  needsRender = true;
-}
-new ResizeObserver(resize).observe(stage);
-resize(); applyTheme();
-/* Adaptive sharpness: if a device can't keep up while the view is moving, render fewer pixels. */
-let pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
-const frameGaps = [];
-let lastTick = null, lastDrawn = false;
-function adapt(gap) {
-  frameGaps.push(gap);
-  if (frameGaps.length < 40) return;
-  const sorted = frameGaps.slice().sort((a, b) => a - b); frameGaps.length = 0;
-  if (sorted[20] > 26 && pixelRatio > 1) {
-    pixelRatio = Math.max(1, pixelRatio - 0.25);
-    renderer.setPixelRatio(pixelRatio); resize();
-  }
-}
-function tick(now) {
-  const dt = lastTick === null ? 1 / 60 : Math.min((now - lastTick) / 1000, 0.05);
-  const gap = lastTick === null ? 0 : now - lastTick;
-  lastTick = now;
-  const tw = stepTween(now), zm = stepZoom(dt), moved = controls.update();
-  if (tw || zm || moved || needsRender) {
-    if (lastDrawn && gap > 0) adapt(gap);
-    const dist = camera.position.distanceTo(controls.target);
-    fog.near = dist * 1.6; fog.far = dist * 5;
-    renderer.render(scene, camera);
-    placePins();
-    needle.style.transform = `rotate(${controls.getAzimuthalAngle()}rad)`;
-    needsRender = false;
-    lastDrawn = true;
-  } else lastDrawn = false;
-}
-function loop(now) { requestAnimationFrame(loop); tick(now); }
-const fontsReady = Promise.race([
-  document.fonts.load('500 30px "Noto Sans TC"', '華山產業道路往寶華頂牌樓下公尺0510'),
-  new Promise(r => setTimeout(r, 2500)),
-]).catch(() => {});
-if (/[?&]debug\b/.test(location.search)) window.__map = { renderer, scene, camera, controls, placePins, tick };
-paintModel();
-loading.hidden = true;
-requestAnimationFrame(loop);
-fontsReady.then(() => paintModel());
-const hashId = decodeURIComponent((location.hash || '').slice(1));
-if (byId[hashId]) setTimeout(() => select(hashId), 300);
-window.addEventListener('hashchange', () => { const id = decodeURIComponent(location.hash.slice(1)); if (byId[id] && id !== activeId) select(id); });
+/*__APP__*/
 })();
 </script>

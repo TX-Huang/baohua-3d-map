@@ -1,0 +1,12 @@
+{
+  "name": "baohua-3d-map",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "build": "python tools/assemble_detail.py src data/detail_data.js layout.json build/artifact.html && python tools/assemble_standalone.py build/artifact.html index.html",
+    "test": "node --test --test-concurrency=1 tests/*.test.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.60.0"
+  }
+}
