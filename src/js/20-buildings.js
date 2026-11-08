@@ -246,11 +246,15 @@ function drawSign() {
 }
 drawSign(); onFonts(drawSign);
 
+const MAIN_GATE_RIGHT = 15.5;     // metres, measured on the aerial photo
 function mainHall(b) {
   const y0 = b.y - HMIN, L = b.L, Wd = b.W, h = b.h;
   const P = newParts('columns', 'lanterns', 'stairs', 'signboard', 'flags');
   const fs = facing(b, plazaCentre('P2'));
-  const pd = 2.8, gw = 7.6, gd = 3.0, gh = h + 1.1;
+  const pd = 2.8, gw = 7.0, gd = 3.0, gh = h + 1.1;
+  // The gate and its stairs are not in the middle: on the aerial photo they sit about 15.5 m to the
+  // right of centre for someone facing the hall from the plaza (light stair strip between two red planters).
+  const gx = fs * MAIN_GATE_RIGHT;
   const Lw = L - 0.8, Wr = Wd - 0.8;                 // roof-bearing box: back wall to the column line
   const Wb = Wr - pd, zb = -fs * pd / 2;             // enclosed hall
   const zf = fs * Wr / 2;                            // porch front (column line)
@@ -258,7 +262,7 @@ function mainHall(b) {
   const yellow = mat('#dcae45'), red = mat('#ae2a1b'), white = mat('#f1ede4'), paving = mat('#d9d3c6');
 
   // the stairs climb from the plaza: find the ground at their foot to size the platform
-  const foot = worldOf(b, 0, zg + fs * 3.5);
+  const foot = worldOf(b, gx, zg + fs * 3.5);
   const footY = Math.min(yAt(foot.x, foot.z), y0);
   const floorY = Math.max(y0 + 0.35, footY + 1.3);
   const base = Math.min(footY, y0) - 2;
@@ -266,18 +270,18 @@ function mainHall(b) {
   // platform: yellow retaining wall, pale paving on top (also under the gate)
   P.trim.add(boxM(L + 0.4, floorY - base, Wd + 0.2), yellow, 0, (floorY + base) / 2, 0);
   P.trim.add(boxM(L + 0.5, 0.08, Wd + 0.3), paving, 0, floorY + 0.04, 0);
-  P.trim.add(boxM(gw + 0.8, floorY - base, gd + 0.4), yellow, 0, (floorY + base) / 2, zf + fs * (gd / 2 + 0.1));
-  P.trim.add(boxM(gw + 0.9, 0.08, gd + 0.5), paving, 0, floorY + 0.04, zf + fs * (gd / 2 + 0.1));
+  P.trim.add(boxM(gw + 0.8, floorY - base, gd + 0.4), yellow, gx, (floorY + base) / 2, zf + fs * (gd / 2 + 0.1));
+  P.trim.add(boxM(gw + 0.9, 0.08, gd + 0.5), paving, gx, floorY + 0.04, zf + fs * (gd / 2 + 0.1));
 
-  // enclosed hall with red doors in the middle of its front wall
+  // enclosed hall with red doors behind the gate
   const wallM = mat('#efe2c0');
   P.body.add(boxM(Lw, h, Wb), wallM, 0, floorY + h / 2, zb);
   const front = zb + fs * Wb / 2, ryF = fs > 0 ? 0 : Math.PI, ryB = fs > 0 ? Math.PI : 0;
-  for (const x of [-2.3, 0, 2.3]) doorAt(P, { w: 1.9, h: 2.9, kind: 'red', frame: '#d9a93a' }, x, floorY, front, ryF);
+  for (const x of [-2.2, 0, 2.2]) doorAt(P, { w: 1.8, h: 2.9, kind: 'red', frame: '#d9a93a' }, gx + x, floorY, front, ryF);
   const n = Math.floor((Lw - 2) / 3.6);
   for (let k = 0; k < n; k++) {
     const x = (k - (n - 1) / 2) * 3.6;
-    if (Math.abs(x) > 4.6) windowAt(P, x, floorY + 1.7, front, ryF, 1.5, 1.4, '#b0281a');
+    if (Math.abs(x - gx) > 4.4) windowAt(P, x, floorY + 1.7, front, ryF, 1.5, 1.4, '#b0281a');
     windowAt(P, x, floorY + 1.7, zb - fs * Wb / 2, ryB, 1.4, 1.2, '#f1ede4');
   }
 
@@ -288,53 +292,54 @@ function mainHall(b) {
   const colGeo = new THREE.CylinderGeometry(0.17, 0.17, h - 0.7, 12), baseGeo = new THREE.CylinderGeometry(0.26, 0.28, 0.28, 12);
   const nc = Math.round(Lw / 3.5);
   const colXs = [];
-  for (let k = 0; k <= nc; k++) { const x = -Lw / 2 + 0.2 + k * (Lw - 0.4) / nc; if (Math.abs(x) > gw / 2 + 0.6) colXs.push(x); }
-  colXs.push(-gw / 2 + 0.3, gw / 2 - 0.3);
+  for (let k = 0; k <= nc; k++) { const x = -Lw / 2 + 0.2 + k * (Lw - 0.4) / nc; if (Math.abs(x - gx) > gw / 2 + 0.6) colXs.push(x); }
+  colXs.push(gx - gw / 2 + 0.3, gx + gw / 2 - 0.3);
   for (const x of colXs) {
     P.columns.add(colGeo, red, x, floorY + (h - 0.7) / 2, zf - fs * 0.25);
     P.columns.add(baseGeo, mat('#b9b3a6'), x, floorY + 0.14, zf - fs * 0.25);
   }
   P.trim.add(boxM(Lw + 0.3, 0.7, 0.34), mat('#e2b23b'), 0, floorY + h - 0.35, zf - fs * 0.25);
-  for (const sg of [-1, 1]) {
-    const x0 = sg * (gw / 2 + 0.2), x1 = sg * (Lw / 2 - 0.1), len = Math.abs(x1 - x0), cx = (x0 + x1) / 2, z = zf - fs * 0.25;
+  for (const [x0, x1] of [[-Lw / 2 + 0.1, gx - gw / 2 - 0.2], [gx + gw / 2 + 0.2, Lw / 2 - 0.1]]) {
+    if (x1 - x0 < 0.5) continue;
+    const len = x1 - x0, cx = (x0 + x1) / 2, z = zf - fs * 0.25;
     P.trim.add(boxM(len, 0.09, 0.12), white, cx, floorY + 0.95, z);
     P.trim.add(boxM(len, 0.08, 0.1), white, cx, floorY + 0.14, z);
     for (let x = Math.min(x0, x1) + 0.15; x < Math.max(x0, x1); x += 0.28) P.trim.add(boxM(0.06, 0.76, 0.06), white, x, floorY + 0.55, z);
   }
   const lanternGeo = new THREE.IcosahedronGeometry(0.24, 1), cordGeo = new THREE.CylinderGeometry(0.012, 0.012, 0.3, 4);
   for (let x = -Lw / 2 + 0.8; x <= Lw / 2 - 0.8; x += 1.25) {
-    if (Math.abs(x) < gw / 2 + 0.3) continue;
+    if (Math.abs(x - gx) < gw / 2 + 0.3) continue;
     P.lanterns.add(lanternGeo, matGlow('#f3cf58', '#5a3d08'), x, floorY + h - 1.0, zf + fs * 0.02);
     P.lanterns.add(cordGeo, mat('#4a3a2a'), x, floorY + h - 0.72, zf + fs * 0.02);
   }
 
-  // the gate in the middle: taller red columns, flat white roof, the red sign on top, red lanterns
+  // the gate: taller red columns, flat white roof, the red sign on top, red lanterns
   const gColGeo = new THREE.CylinderGeometry(0.22, 0.22, gh - 0.35, 14);
-  for (const x of [-gw / 2 + 0.3, gw / 2 - 0.3]) for (const z of [zf - fs * 0.25, zg - fs * 0.35]) {
+  for (const x of [gx - gw / 2 + 0.3, gx + gw / 2 - 0.3]) for (const z of [zf - fs * 0.25, zg - fs * 0.35]) {
     P.columns.add(gColGeo, red, x, floorY + (gh - 0.35) / 2, z);
     P.columns.add(baseGeo, mat('#b9b3a6'), x, floorY + 0.14, z);
   }
-  P.roof.add(boxM(gw + 0.9, 0.38, gd + 1.0), mat('#f3f1ea'), 0, floorY + gh + 0.02, zf + fs * (gd / 2 + 0.05));
-  P.trim.add(boxM(gw + 0.94, 0.16, gd + 1.04), mat('#d8ab3d'), 0, floorY + gh - 0.2, zf + fs * (gd / 2 + 0.05));
-  P.trim.add(boxM(gw - 0.2, 0.5, 0.3), red, 0, floorY + gh - 0.55, zg - fs * 0.35);
+  P.roof.add(boxM(gw + 0.9, 0.38, gd + 1.0), mat('#f3f1ea'), gx, floorY + gh + 0.02, zf + fs * (gd / 2 + 0.05));
+  P.trim.add(boxM(gw + 0.94, 0.16, gd + 1.04), mat('#d8ab3d'), gx, floorY + gh - 0.2, zf + fs * (gd / 2 + 0.05));
+  P.trim.add(boxM(gw - 0.2, 0.5, 0.3), red, gx, floorY + gh - 0.55, zg - fs * 0.35);
   const signY = floorY + gh + 0.21 + 0.85, signZ = zg + fs * 0.1;
-  P.signboard.add(boxM(7.2, 1.7, 0.32), mat('#8f1f14'), 0, signY, signZ);
-  const face = new THREE.Mesh(new THREE.PlaneGeometry(6.9, 1.4), new THREE.MeshLambertMaterial({ map: signTex }));
-  face.position.set(0, signY, signZ + fs * 0.17); face.rotation.y = fs > 0 ? 0 : Math.PI; face.name = 'sign-face';
+  P.signboard.add(boxM(6.7, 1.6, 0.32), mat('#8f1f14'), gx, signY, signZ);
+  const face = new THREE.Mesh(new THREE.PlaneGeometry(6.4, 1.3), new THREE.MeshLambertMaterial({ map: signTex }));
+  face.position.set(gx, signY, signZ + fs * 0.17); face.rotation.y = fs > 0 ? 0 : Math.PI; face.name = 'sign-face';
   const redLantern = new THREE.IcosahedronGeometry(0.3, 1);
   for (let k = -2; k <= 2; k++) {
-    P.lanterns.add(redLantern, matGlow('#d23a26', '#4a0c06'), k * 1.4, floorY + gh - 1.25, zg - fs * 0.35);
-    P.lanterns.add(cordGeo, mat('#4a3a2a'), k * 1.4, floorY + gh - 0.85, zg - fs * 0.35);
+    P.lanterns.add(redLantern, matGlow('#d23a26', '#4a0c06'), gx + k * 1.25, floorY + gh - 1.25, zg - fs * 0.35);
+    P.lanterns.add(cordGeo, mat('#4a3a2a'), gx + k * 1.25, floorY + gh - 0.85, zg - fs * 0.35);
   }
   // incense burner in the gate
-  P.doors.add(new THREE.CylinderGeometry(0.5, 0.42, 0.7, 16), mat('#6b5434'), 0, floorY + 0.45, zf + fs * (gd / 2));
-  P.doors.add(new THREE.CylinderGeometry(0.56, 0.56, 0.08, 16), mat('#8a6d3f'), 0, floorY + 0.84, zf + fs * (gd / 2));
+  P.doors.add(new THREE.CylinderGeometry(0.5, 0.42, 0.7, 16), mat('#6b5434'), gx, floorY + 0.45, zf + fs * (gd / 2));
+  P.doors.add(new THREE.CylinderGeometry(0.56, 0.56, 0.08, 16), mat('#8a6d3f'), gx, floorY + 0.84, zf + fs * (gd / 2));
 
   // stairs down to the plaza, between yellow cheek walls
-  const rise = floorY - footY, ns = Math.max(3, Math.round(rise / 0.16)), rs = rise / ns, tread = 0.32, sw = 6.2;
+  const rise = floorY - footY, ns = Math.max(3, Math.round(rise / 0.16)), rs = rise / ns, tread = 0.32, sw = 5.0;
   for (let k = 1; k < ns; k++) {
     const topY = floorY - k * rs, z0 = zg + fs * (k - 1) * tread;
-    P.stairs.add(boxM(sw, topY - (footY - 1), tread), mat(k % 2 ? '#cfc9bd' : '#c8c2b5'), 0, (topY + footY - 1) / 2, z0 + fs * tread / 2);
+    P.stairs.add(boxM(sw, topY - (footY - 1), tread), mat(k % 2 ? '#cfc9bd' : '#c8c2b5'), gx, (topY + footY - 1) / 2, z0 + fs * tread / 2);
   }
   const run = (ns - 1) * tread;
   const shape = new THREE.Shape([
@@ -342,20 +347,20 @@ function mainHall(b) {
     new THREE.Vector2(fs * (run + 0.3), footY + 0.85), new THREE.Vector2(0, floorY + 0.95),
   ]);
   const cheek = new THREE.ExtrudeGeometry(shape, { depth: 0.32, bevelEnabled: false });
-  for (const sg of [-1, 1]) P.stairs.add(cheek, yellow, sg * (sw / 2 + 0.16) + 0.16, 0, zg, -Math.PI / 2);
+  for (const sg of [-1, 1]) P.stairs.add(cheek, yellow, gx + sg * (sw / 2 + 0.16) + 0.16, 0, zg, -Math.PI / 2);
 
   // flags beside the gate
   const poleGeo = new THREE.CylinderGeometry(0.045, 0.06, 6.4, 6), flagGeo = new THREE.PlaneGeometry(0.75, 2.3);
   const flagCols = ['#2f6fbf', '#e8c33a', '#c8321f', '#2f6fbf'];
-  [-gw / 2 - 0.9, -gw / 2 - 1.9, gw / 2 + 1.9, gw / 2 + 0.9].forEach((x, i) => {
+  [-gw / 2 - 0.9, -gw / 2 - 1.9, gw / 2 + 1.9, gw / 2 + 0.9].map(x => gx + x).forEach((x, i) => {
     const z = zf + fs * (gd - 0.6);
     P.flags.add(poleGeo, mat('#c9ccce'), x, floorY + 3.2, z);
-    P.flags.add(flagGeo, matSide2(flagCols[i]), x + (x > 0 ? 0.42 : -0.42), floorY + 4.9, z);
+    P.flags.add(flagGeo, matSide2(flagCols[i]), x + (x > gx ? 0.42 : -0.42), floorY + 4.9, z);
   });
 
   const grp = finish(b, P);
   grp.add(face);
-  return { grp, top: Math.max(top, signY + 0.85), entrance: worldOf(b, 0, zg + fs * (run + 1)) };
+  return { grp, top: Math.max(top, signY + 0.85), entrance: worldOf(b, gx, zg + fs * (run + 1)) };
 }
 
 /* ---- which style each traced building gets ---- */

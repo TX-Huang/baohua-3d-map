@@ -431,3 +431,18 @@ test('發布：送出途中又改了東西，那些修改還留在草稿', async
   assert.match(await page.locator('#editStatus').textContent(), /還沒發布/);
   await ctx.close();
 });
+
+test('建築：主殿樓梯不在正中間，面向主殿時偏右約 15 公尺（照空拍圖）', async () => {
+  const { page, ctx } = await open('?debug');
+  const r = await page.evaluate(() => {
+    const hall = window.__map.buildingGroup('B').getObjectByName('B');
+    const stairs = hall.getObjectByName('stairs');
+    const c = new THREE.Box3().setFromObject(stairs).getCenter(new THREE.Vector3());
+    const a = -hall.rotation.y, dx = c.x - hall.position.x, dz = c.z - hall.position.z;
+    const along = dx * Math.cos(a) + dz * Math.sin(a), across = -dx * Math.sin(a) + dz * Math.cos(a);
+    // facing the hall from the front, "right" is +along when the front is +across, and -along otherwise
+    return { right: along * Math.sign(across), across };
+  });
+  assert.ok(Math.abs(r.right - 15.5) < 1.5, `stairs are ${r.right.toFixed(1)} m right of the middle`);
+  await ctx.close();
+});
