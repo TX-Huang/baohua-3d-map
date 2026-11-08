@@ -446,3 +446,25 @@ test('建築：主殿樓梯不在正中間，面向主殿時偏右約 15 公尺�
   assert.ok(Math.abs(r.right - 15.5) < 1.5, `stairs are ${r.right.toFixed(1)} m right of the middle`);
   await ctx.close();
 });
+
+test('手機：用手指拖曳登記處的標籤，桌子會跟著移動', async () => {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  const page = await ctx.newPage();
+  await page.goto(base + '?edit&debug');
+  await page.waitForFunction(() => window.__map && window.__map.ready === true);
+  await page.evaluate(() => { const p = window.__map.points().find(q => q.id === 'reg'); window.__map.lookAt(p.x, p.z, 40); });
+  await waitIdle(page);
+  const p = (await pts(page)).find(q => q.id === 'reg');
+  const from = await groundScreen(page, p.x, p.z), to = await groundScreen(page, p.x + 4, p.z + 3);
+  const start = await pinCenter(page, 'reg');
+  const cdp = await ctx.newCDPSession(page);
+  const touch = (type, x, y) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y, id: 1 }] });
+  await touch('touchStart', start.x, start.y);
+  for (let k = 1; k <= 10; k++) await touch('touchMove', start.x + (to.x - from.x) * k / 10, start.y + (to.y - from.y) * k / 10);
+  await touch('touchEnd');
+  await waitIdle(page);
+  const after = (await pts(page)).find(q => q.id === 'reg');
+  assert.ok(Math.hypot(after.x - (p.x + 4), after.z - (p.z + 3)) < 1.0, `moved to ${after.x.toFixed(1)},${after.z.toFixed(1)}`);
+  assert.match(await page.locator('#editStatus').textContent(), /還沒發布/);
+  await ctx.close();
+});
