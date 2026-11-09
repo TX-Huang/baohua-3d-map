@@ -210,6 +210,28 @@ test('ribbon: a path hundreds of kilometres long stays small (no freeze)', () =>
   assert.ok(Math.abs(r.length - 900000) < 1);
 });
 
+test('ribbon: with `across`, extra columns follow the ground across the width', () => {
+  const r = L.ribbon([[0, 0], [10, 0]], 2, (x, z) => z * z, { step: 1, across: 0.5 });
+  const cols = 5, P = r.positions, U = r.uvs, n = P.length / 3, rows = n / cols;
+  assert.equal(rows, 11);
+  for (let k = 0; k < rows; k++) for (let j = 0; j < cols; j++) {
+    const i = k * cols + j, z = P[i * 3 + 2];
+    assert.ok(Math.abs(U[i * 2] - j / (cols - 1)) < 1e-9, `u at row ${k} col ${j}`);
+    assert.ok(Math.abs(P[i * 3 + 1] - z * z) < 1e-9, 'each column takes its own height');
+    if (j) assert.ok(Math.abs(Math.hypot(P[i * 3] - P[i * 3 - 3], z - P[i * 3 - 1]) - 0.5) < 1e-6, 'columns 0.5 m apart');
+  }
+  assert.equal(r.indices.length, (rows - 1) * (cols - 1) * 6);
+  const I = r.indices, flat = L.ribbon([[0, 0], [0, -10], [-5, -12]], 2, () => 0, { step: 1, across: 0.5 });
+  for (let t = 0; t < flat.indices.length; t += 3) {
+    const [a, b, c] = [flat.indices[t], flat.indices[t + 1], flat.indices[t + 2]].map(i => [flat.positions[i * 3], flat.positions[i * 3 + 2]]);
+    assert.ok((b[1] - a[1]) * (c[0] - a[0]) - (b[0] - a[0]) * (c[1] - a[1]) > 0, `triangle ${t / 3} faces down`);
+  }
+  assert.ok(I.length > 0);
+  // a very wide walkway does not get an unbounded number of columns
+  const wide = L.ribbon([[0, 0], [1, 0]], 8, () => 0, { step: 1, across: 0.25 });
+  assert.equal(wide.positions.length / 3 / 2, 17);
+});
+
 test('ribbon: every triangle faces up, so it is visible from above', () => {
   for (const pts of [[[0, 0], [10, 0]], [[0, 0], [0, -10], [-5, -12]]]) {
     const r = L.ribbon(pts, 2, () => 0, { step: 1 });

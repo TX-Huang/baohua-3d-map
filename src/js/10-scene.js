@@ -38,6 +38,16 @@ function yAt(x, z) {
   const c0 = Math.floor(c), r0 = Math.floor(r), fc = c - c0, fr = r - r0, i = r0 * COLS + c0;
   return (H[i] * (1 - fc) + H[i + 1] * fc) * (1 - fr) + (H[i + COLS] * (1 - fc) + H[i + COLS + 1] * fc) * fr;
 }
+/* Floors people can walk on above the ground (the main hall's platform and stairs). Each entry has
+   at(x, z): the floor height at a map point, or -Infinity off it (walkways and tables sit on whichever
+   is higher, the ground or the floor, so they are not buried under the steps), and
+   hit(ray): how far along a camera ray it is hit, or null (for taps). */
+const WALK = [];
+function surfaceAt(x, z) {
+  let y = yAt(x, z);
+  for (const w of WALK) { const s = w.at(x, z); if (s > y) y = s; }
+  return y;
+}
 const toLocal = (lon, lat) => LC.toLocal(GEO, lon, lat);
 const toLonLat = (x, z) => LC.toLonLat(GEO, x, z);
 const clampX = (x) => Math.min(Math.max(x, -W / 2 + 1), W / 2 - 1);
@@ -146,7 +156,9 @@ scene.add(terrain);
   sh.position.y = BASE_Y - 25; scene.add(sh);
 })();
 
-/* Where does a screen point hit the ground? Walks along the camera ray until it dips below the terrain. */
+/* Where does a screen point hit the ground? The terrain: walk along the camera ray until it dips below it.
+   The walkable floors (steps, platform): their boxes are hit exactly, so a tap lands on the step that was
+   tapped and a thin step edge is never skipped. Walls and roofs are looked through. */
 const _ray = new THREE.Raycaster(), _ndc = new THREE.Vector2();
 function rayFrom(clientX, clientY) {
   const rect = renderer.domElement.getBoundingClientRect();
@@ -157,8 +169,8 @@ function rayFrom(clientX, clientY) {
 }
 const GROUND_BOX = new THREE.Box3(new THREE.Vector3(-W / 2, -1, -DEP / 2), new THREE.Vector3(W / 2, HMAX + 5, DEP / 2));
 const _hit = new THREE.Vector3();
-function groundAt(clientX, clientY) {
-  const ray = rayFrom(clientX, clientY).ray, o = ray.origin, d = ray.direction;
+function terrainHit(ray) {        // distance along the ray, or null
+  const o = ray.origin, d = ray.direction;
   let t0 = 0;
   if (!GROUND_BOX.containsPoint(o)) { if (!ray.intersectBox(GROUND_BOX, _hit)) return null; t0 = _hit.distanceTo(o); }
   const above = (t) => o.y + d.y * t - yAt(o.x + d.x * t, o.z + d.z * t);
@@ -170,10 +182,17 @@ function groundAt(clientX, clientY) {
     if (above(t) <= 0) {
       let a = prev, b = t;
       for (let k = 0; k < 14; k++) { const m = (a + b) / 2; if (above(m) > 0) a = m; else b = m; }
-      const hx = o.x + d.x * b, hz = o.z + d.z * b;
-      return { x: clampX(hx), y: yAt(clampX(hx), clampZ(hz)), z: clampZ(hz) };
+      return b;
     }
     prev = t;
   }
   return null;
+}
+function groundAt(clientX, clientY) {
+  const ray = rayFrom(clientX, clientY).ray;
+  let t = terrainHit(ray);
+  for (const w of WALK) { const h = w.hit(ray); if (h !== null && (t === null || h < t)) t = h; }
+  if (t === null) return null;
+  const x = clampX(ray.origin.x + ray.direction.x * t), z = clampZ(ray.origin.z + ray.direction.z * t);
+  return { x, y: ray.origin.y + ray.direction.y * t, z };
 }

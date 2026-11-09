@@ -248,12 +248,17 @@
     }
     const last = segN[segN.length - 1];
     S.push([P[P.length - 1][0], P[P.length - 1][1], dist, last[0], last[1]]);
-    const hw = width / 2, positions = new Float32Array(S.length * 6), uvs = new Float32Array(S.length * 4), indices = [];
+    // columns across the strip, left edge first: just the two edges, or one every `across` metres (at most 17)
+    // so a strip that is half on a step and half beside it bends there instead of cutting through the step
+    const across = opt && opt.across, cols = across ? Math.min(17, Math.max(2, Math.ceil(width / across) + 1)) : 2;
+    const hw = width / 2, positions = new Float32Array(S.length * cols * 3), uvs = new Float32Array(S.length * cols * 2), indices = [];
     S.forEach(([x, z, d, nx, nz], k) => {
-      const lx = x + nx * hw, lz = z + nz * hw, rx = x - nx * hw, rz = z - nz * hw;
-      positions.set([lx, yFn(lx, lz) + lift, lz, rx, yFn(rx, rz) + lift, rz], k * 6);
-      uvs.set([0, d, 1, d], k * 4);
-      if (k > 0) { const a = (k - 1) * 2; indices.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+      for (let j = 0; j < cols; j++) {
+        const f = hw * (1 - 2 * j / (cols - 1)), px = x + nx * f, pz = z + nz * f, i = k * cols + j;
+        positions.set([px, yFn(px, pz) + lift, pz], i * 3);
+        uvs.set([j / (cols - 1), d], i * 2);
+      }
+      if (k > 0) for (let j = 0; j < cols - 1; j++) { const a = (k - 1) * cols + j, b = a + cols; indices.push(a, a + 1, b, a + 1, b + 1, b); }
     });
     return { positions, uvs, indices, length: dist };
   }

@@ -41,7 +41,7 @@ function makeItem(it) {
 }
 function placeItem(g, it) {
   const { x, z } = onMap(it.lon, it.lat);
-  g.position.set(x, yAt(x, z), z);
+  g.position.set(x, surfaceAt(x, z), z);
   g.rotation.y = -it.rot * Math.PI / 180;
 }
 
@@ -80,7 +80,7 @@ function pathTexture(style, text) {
 }
 const pathLocal = (p) => p.pts.map(([lon, lat]) => { const q = onMap(lon, lat); return [q.x, q.z]; });
 function pathGeometry(local, width) {
-  const r = LC.ribbon(local, width, yAt, { step: 0.5, lift: 0.08 });
+  const r = LC.ribbon(local, width, surfaceAt, { step: 0.5, lift: 0.08, across: 0.25 });
   const uv = r.uvs; for (let i = 1; i < uv.length; i += 2) uv[i] /= width;
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(r.positions, 3));
@@ -116,13 +116,13 @@ function placePoint(p) {
   });
 }
 function itemPoint(it) {
-  const { x, z } = onMap(it.lon, it.lat), gy = yAt(x, z), M = ITEM_MODELS[it.type], th = -it.rot * Math.PI / 180;
+  const { x, z } = onMap(it.lon, it.lat), gy = surfaceAt(x, z), M = ITEM_MODELS[it.type], th = -it.rot * Math.PI / 180;
   return { id: it.id, kind: 'item', type: it.type, x, z, y: gy + M.h + 0.5, elev: Math.round(gy + HMIN), size: M.size,
     name: it.name, glyph: it.glyph, note: it.note, staff: it.staff, named: true, isEvent: true, near: true,
     viewDir: it.type === 'table' ? [-Math.sin(th), -Math.cos(th)] : null };
 }
 function pathPoint(p, local, length) {
-  const [x, z] = LC.pointAt(local, 0.5), gy = yAt(x, z);
+  const [x, z] = LC.pointAt(local, 0.5), gy = surfaceAt(x, z);
   return { id: p.id, kind: 'path', x, z, y: gy + 0.7, elev: Math.round(gy + HMIN),
     size: `長約 ${Math.max(1, Math.round(length))} 公尺 · 寬 ${p.width} 公尺`,
     name: p.name, glyph: '道', note: p.note, staff: p.staff, named: true, isEvent: true, near: false, local };
@@ -147,7 +147,7 @@ function applyLayout() {
 function moveItemLive(id, x, z) {
   const g = itemObjs.get(id), p = byId[id];
   if (!g || !p) return;
-  const gy = yAt(x, z);
+  const gy = surfaceAt(x, z);
   g.position.set(x, gy, z);
   Object.assign(p, { x, z, y: gy + ITEM_MODELS[p.type].h + 0.5, elev: Math.round(gy + HMIN) });
   needsRender = true;
@@ -158,7 +158,7 @@ function reshapePathLive(id, local, width) {
   const { g, length } = pathGeometry(local, width);
   mesh.geometry.dispose(); mesh.geometry = g;
   const [x, z] = LC.pointAt(local, 0.5);
-  Object.assign(p, { x, z, y: yAt(x, z) + 0.7, local, size: `長約 ${Math.max(1, Math.round(length))} 公尺 · 寬 ${width} 公尺` });
+  Object.assign(p, { x, z, y: surfaceAt(x, z) + 0.7, local, size: `長約 ${Math.max(1, Math.round(length))} 公尺 · 寬 ${width} 公尺` });
   needsRender = true;
 }
 function restylePathLive(id, style, text) {

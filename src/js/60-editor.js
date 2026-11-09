@@ -73,7 +73,7 @@ function startDrag(e, d) {
   e.preventDefault(); e.stopPropagation();
   const p = byId[d.id];
   const [gx, gz] = d.kind === 'item' ? [p.x, p.z] : p.local[d.idx];
-  const s = screenOf(gx, yAt(gx, gz), gz);
+  const s = screenOf(gx, surfaceAt(gx, gz), gz);
   drag = { ...d, pointerId: e.pointerId, ox: e.clientX - s.x, oy: e.clientY - s.y, sx: e.clientX, sy: e.clientY, moved: false };
   window.addEventListener('pointermove', onDragMove, true);
   window.addEventListener('pointerup', onDragEnd, true);
@@ -170,7 +170,7 @@ function placeHandles(w, h) {
   }
   pts.forEach(([x, z], i) => {
     const el = handleEls[i];
-    v.set(x, yAt(x, z) + 0.1, z).project(camera);
+    v.set(x, surfaceAt(x, z) + 0.1, z).project(camera);
     const vis = v.z < 1 && Math.abs(v.x) < 1.1 && Math.abs(v.y) < 1.1;
     el.hidden = !vis;
     el.classList.toggle('dot', !!drawing);

@@ -97,6 +97,24 @@ function nearestRoad(b) {
   return best || [b.cx, b.cz + 1];
 }
 const facing = (b, [wx, wz]) => (localOf(b, wx, wz).z >= 0 ? 1 : -1);
+/* A floor people walk on (see WALK): `at(x, z)` gives its height in the building's own frame, and taps hit
+   its boxes (also in the building's frame) exactly. */
+const boxAt = (x, y, z, sx, sy, sz) => new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(x, y, z), new THREE.Vector3(sx, sy, sz));
+const _wr = new THREE.Ray(), _wp = new THREE.Vector3();
+function walkable(b, at, boxes) {
+  const c = Math.cos(b.a), s = Math.sin(b.a);
+  WALK.push({
+    at: (wx, wz) => { const p = localOf(b, wx, wz); return at(p.x, p.z); },
+    hit(ray) {
+      const o = ray.origin, d = ray.direction, dx = o.x - b.cx, dz = o.z - b.cz;
+      _wr.origin.set(dx * c + dz * s, o.y, -dx * s + dz * c);
+      _wr.direction.set(d.x * c + d.z * s, d.y, -d.x * s + d.z * c);
+      let best = null;
+      for (const box of boxes) if (!box.containsPoint(_wr.origin) && _wr.intersectBox(box, _wp)) { const t = _wp.distanceTo(_wr.origin); if (best === null || t < best) best = t; }
+      return best;
+    },
+  });
+}
 // which wall looks toward a point: 'front' / 'back' (the long sides, front = +z * front sign) or 'end+' / 'end-'
 function wallToward(b, [wx, wz], front) {
   const q = localOf(b, wx, wz);
@@ -270,8 +288,10 @@ function mainHall(b) {
   // platform: yellow retaining wall, pale paving on top (also under the gate)
   P.trim.add(boxM(L + 0.4, floorY - base, Wd + 0.2), yellow, 0, (floorY + base) / 2, 0);
   P.trim.add(boxM(L + 0.5, 0.08, Wd + 0.3), paving, 0, floorY + 0.04, 0);
-  P.trim.add(boxM(gw + 0.8, floorY - base, gd + 0.4), yellow, gx, (floorY + base) / 2, zf + fs * (gd / 2 + 0.1));
-  P.trim.add(boxM(gw + 0.9, 0.08, gd + 0.5), paving, gx, floorY + 0.04, zf + fs * (gd / 2 + 0.1));
+  // the floor under the gate runs from just behind the column line to the top step (not over it)
+  const padZ = zf + fs * (gd / 2 - 0.05), padD = gd + 0.1;
+  P.trim.add(boxM(gw + 0.8, floorY - base, padD), yellow, gx, (floorY + base) / 2, padZ);
+  P.trim.add(boxM(gw + 0.9, 0.08, padD), paving, gx, floorY + 0.04, padZ);
 
   // enclosed hall with red doors behind the gate
   const wallM = mat('#efe2c0');
@@ -337,9 +357,11 @@ function mainHall(b) {
 
   // stairs down to the plaza, between yellow cheek walls
   const rise = floorY - footY, ns = Math.max(3, Math.round(rise / 0.16)), rs = rise / ns, tread = 0.32, sw = 5.0;
+  const stepBoxes = [];
   for (let k = 1; k < ns; k++) {
     const topY = floorY - k * rs, z0 = zg + fs * (k - 1) * tread;
     P.stairs.add(boxM(sw, topY - (footY - 1), tread), mat(k % 2 ? '#cfc9bd' : '#c8c2b5'), gx, (topY + footY - 1) / 2, z0 + fs * tread / 2);
+    stepBoxes.push(boxAt(gx, (topY + footY - 1) / 2, z0 + fs * tread / 2, sw, topY - (footY - 1), tread));
   }
   const run = (ns - 1) * tread;
   const shape = new THREE.Shape([
@@ -348,6 +370,20 @@ function mainHall(b) {
   ]);
   const cheek = new THREE.ExtrudeGeometry(shape, { depth: 0.32, bevelEnabled: false });
   for (const sg of [-1, 1]) P.stairs.add(cheek, yellow, gx + sg * (sw / 2 + 0.16) + 0.16, 0, zg, -Math.PI / 2);
+
+  // where people walk: the platform, the floor under the gate, and the stairs. Walkways and tables see the
+  // stairs as a ramp resting on the step edges (like a carpet laid over them); taps hit the real steps.
+  // The yellow side walls count as stairs too, so a walkway hanging over the side bends past the wall,
+  // not on the steps.
+  const FLOOR = floorY + 0.08;
+  walkable(b, (x, z) => {
+    if (Math.abs(x) <= (L + 0.5) / 2 && Math.abs(z) <= (Wd + 0.3) / 2) return FLOOR;
+    if (Math.abs(x - gx) <= (gw + 0.9) / 2 && Math.abs(z - padZ) <= padD / 2) return FLOOR;
+    const s = fs * (z - zg);                      // metres down the stairs from the gate floor
+    if (Math.abs(x - gx) <= sw / 2 + 0.32 && s >= 0 && s <= ns * tread) return floorY + 0.02 - s * rs / tread;
+    return -Infinity;
+  }, [boxAt(0, (FLOOR + base) / 2, 0, L + 0.5, FLOOR - base, Wd + 0.3),
+    boxAt(gx, (FLOOR + base) / 2, padZ, gw + 0.9, FLOOR - base, padD), ...stepBoxes]);
 
   // flags beside the gate
   const poleGeo = new THREE.CylinderGeometry(0.045, 0.06, 6.4, 6), flagGeo = new THREE.PlaneGeometry(0.75, 2.3);

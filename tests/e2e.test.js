@@ -222,7 +222,12 @@ test('編輯模式：改走道的字、寬度、顏色，3D 跟著變', async ()
     pts: [[reg.lon, reg.lat], [reg.lon + 0.0001, reg.lat + 0.00005]], note: '', staff: [] }];
   const { page, ctx } = await open('?edit&debug#w1', { layout: withPath });
   await page.locator('#editForm').waitFor({ state: 'visible' });
-  const width = () => page.evaluate(() => { const g = window.__map.objectFor('w1').geometry.attributes.position.array; return Math.hypot(g[0] - g[3], g[2] - g[5]); });
+  // left edge to right edge of the first cross-section (the right edge is the first vertex with u = 1)
+  const width = () => page.evaluate(() => {
+    const geo = window.__map.objectFor('w1').geometry, g = geo.attributes.position.array, uv = geo.attributes.uv.array;
+    let j = 0; while (uv[j * 2] < 1) j++;
+    return Math.hypot(g[0] - g[j * 3], g[2] - g[j * 3 + 2]);
+  });
   assert.ok(Math.abs(await width() - 2) < 0.01);
   await page.fill('#editForm [name="width"]', '4');
   await page.fill('#editForm [name="text"]', '請勿通行');
@@ -466,5 +471,190 @@ test('手機：用手指拖曳登記處的標籤，桌子會跟著移動', async
   const after = (await pts(page)).find(q => q.id === 'reg');
   assert.ok(Math.hypot(after.x - (p.x + 4), after.z - (p.z + 3)) < 1.0, `moved to ${after.x.toFixed(1)},${after.z.toFixed(1)}`);
   assert.match(await page.locator('#editStatus').textContent(), /還沒發布/);
+  await ctx.close();
+});
+
+/* ---- walkways and items on the main hall's stairs and platform ---- */
+// The stairs in the hall's own frame (x along the hall, z across it): their middle (cx), the top step
+// next to the gate (near), the bottom on the plaza side (far), which way is out (fs), the highest point (top),
+// and the sides of the steps themselves (tx0..tx1, without the yellow side walls).
+async function hallStairs(page) {
+  return page.evaluate(() => {
+    const hall = window.__map.buildingGroup('B').getObjectByName('B');
+    hall.updateMatrixWorld(true);
+    const v = new THREE.Vector3(), lo = new THREE.Vector3(Infinity, Infinity, Infinity), hi = lo.clone().negate();
+    let tx0 = Infinity, tx1 = -Infinity;
+    const square = (c) => Math.abs(c) < 1e-3 || Math.abs(Math.abs(c) - 1) < 1e-3;
+    hall.getObjectByName('stairs').traverse(o => {
+      if (!o.isMesh) return;
+      const P = o.geometry.attributes.position, N = o.geometry.attributes.normal;
+      let steps = true;                          // the steps are plain boxes; the side walls have a sloping top
+      for (let i = 0; i < N.count && steps; i++) steps = square(N.getX(i)) && square(N.getY(i)) && square(N.getZ(i));
+      for (let i = 0; i < P.count; i++) {
+        hall.worldToLocal(v.fromBufferAttribute(P, i).applyMatrix4(o.matrixWorld)); lo.min(v); hi.max(v);
+        if (steps) { tx0 = Math.min(tx0, v.x); tx1 = Math.max(tx1, v.x); }
+      }
+    });
+    const [near, far] = Math.abs(lo.z) < Math.abs(hi.z) ? [lo.z, hi.z] : [hi.z, lo.z];
+    return { cx: (lo.x + hi.x) / 2, near, far, fs: Math.sign(far - near), top: hi.y, tx0, tx1 };
+  });
+}
+const hallPoint = (page, x, z) => page.evaluate(([x, z]) => {
+  const hall = window.__map.buildingGroup('B').getObjectByName('B');
+  hall.updateMatrixWorld(true);
+  const w = hall.localToWorld(new THREE.Vector3(x, 0, z));
+  return { x: w.x, z: w.z };
+}, [x, z]);
+// height of the hall's own surface (step, floor) under a point, looking down from just above the stairs
+const hallFloorBelow = (page, x, z, fromY) => page.evaluate(([x, z, fromY]) => {
+  const hall = window.__map.buildingGroup('B').getObjectByName('B');
+  const hit = new THREE.Raycaster(new THREE.Vector3(x, fromY, z), new THREE.Vector3(0, -1, 0)).intersectObject(hall, true)[0];
+  return hit ? hit.point.y : null;
+}, [x, z, fromY]);
+
+test('畫走道：點在主殿樓梯上，點就落在那一階，不是樓梯後面的地面', async () => {
+  const { page, ctx } = await open('?edit&debug');
+  const S = await hallStairs(page);
+  const run = Math.abs(S.far - S.near);
+  const step = await hallPoint(page, S.cx, S.near + S.fs * run * 0.25);
+  const y = await hallFloorBelow(page, step.x, step.z, S.top + 0.6);
+  assert.ok(y !== null, 'there is a step there');
+  await page.evaluate(([x, z]) => window.__map.lookAt(x, z, 40), [step.x, step.z]);
+  await waitIdle(page);
+  await page.click('#drawPath');
+  const s = await page.evaluate(([x, y, z]) => window.__map.screenOf(x, y, z), [step.x, y, step.z]);
+  await page.mouse.click(s.x, s.y);
+  const plaza = await hallPoint(page, S.cx, S.far + S.fs * 6);
+  const s2 = await groundScreen(page, plaza.x, plaza.z);
+  await page.mouse.click(s2.x, s2.y);
+  await page.click('#drawDone');
+  const p = (await lay(page)).paths.at(-1);
+  const first = await page.evaluate(([lon, lat]) => window.__map.toLocal(lon, lat), p.pts[0]);
+  const off = Math.hypot(first.x - step.x, first.z - step.z);
+  assert.ok(off < 0.3, `the point landed ${off.toFixed(2)} m away from the step I tapped`);
+  await ctx.close();
+});
+
+test('畫走道：從旁邊低角度點樓梯中間，點還是落在那一階', async () => {
+  const { page, ctx } = await open('?edit&debug');
+  const S = await hallStairs(page);
+  const run = Math.abs(S.far - S.near);
+  const step = await hallPoint(page, S.cx, S.near + S.fs * run * 0.4);
+  const y = await hallFloorBelow(page, step.x, step.z, S.top + 0.6);
+  // camera off to the side of the stairs (along the hall), low: about 20 degrees above the steps
+  const eye = await hallPoint(page, S.cx + 14, S.near + S.fs * run * 0.4);
+  await page.evaluate(([t, e, y]) => {
+    const m = window.__map;
+    m.controls.target.set(t.x, y, t.z); m.camera.position.set(e.x, y + 5, e.z); m.controls.update();
+  }, [step, eye, y]);
+  await waitIdle(page);
+  await page.click('#drawPath');
+  const s = await page.evaluate(([x, y, z]) => window.__map.screenOf(x, y, z), [step.x, y, step.z]);
+  await page.mouse.click(s.x, s.y);
+  await page.mouse.click(s.x, Math.min(s.y + 60, 780));
+  await page.click('#drawDone');
+  const p = (await lay(page)).paths.at(-1);
+  const first = await page.evaluate(([lon, lat]) => window.__map.toLocal(lon, lat), p.pts[0]);
+  const off = Math.hypot(first.x - step.x, first.z - step.z);
+  assert.ok(off < 0.3, `the point landed ${off.toFixed(2)} m away from the step I tapped`);
+  await ctx.close();
+});
+
+// a layout with one extra walkway or item, placed in the main hall's frame
+async function layoutWithHallThing(make) {
+  const probe = await open('?debug');
+  const S = await hallStairs(probe.page);
+  const local = make(S);
+  const lonLat = [];
+  for (const [x, z] of local.at) {
+    const w = await hallPoint(probe.page, x, z);
+    lonLat.push(await probe.page.evaluate(([x, z]) => window.__map.toLonLat(x, z), [w.x, w.z]));
+  }
+  await probe.ctx.close();
+  const layout = JSON.parse(JSON.stringify(PUBLISHED));
+  local.add(layout, lonLat);
+  return { layout, S };
+}
+
+test('走道從廣場走上主殿樓梯到門樓地板：整條鋪在樓梯和地板上面，不會被埋住', async () => {
+  const { layout, S } = await layoutWithHallThing(S => {
+    const x = S.cx + 1.4;     // beside the incense burner in the middle of the gate
+    return {
+      at: [[x, S.far + S.fs * 3], [x, S.near - S.fs * 2.4]],
+      add: (L, ll) => L.paths.push({ id: 'wstairs', name: '上樓梯', text: '神明專用', style: 'red', width: 1.4,
+        pts: ll.map(q => [q.lon, q.lat]), note: '', staff: [] }),
+    };
+  });
+  const { page, ctx, errors } = await open('?debug', { layout });
+  const r = await page.evaluate((fromY) => {
+    const hall = window.__map.buildingGroup('B').getObjectByName('B');
+    const P = window.__map.objectFor('wstairs').geometry.attributes.position, ray = new THREE.Raycaster();
+    const out = { onHall: 0, buried: [], floating: [] };
+    for (let i = 0; i < P.count; i++) {
+      const x = P.getX(i), y = P.getY(i), z = P.getZ(i);
+      ray.set(new THREE.Vector3(x, fromY, z), new THREE.Vector3(0, -1, 0));
+      const hit = ray.intersectObject(hall, true)[0];
+      if (!hit) continue;                       // out on the plaza
+      out.onHall++;
+      if (y < hit.point.y - 0.01) out.buried.push(+(hit.point.y - y).toFixed(2));
+      // a straight carpet over steps touches their front edges; behind each edge it is one step height above
+      else if (y - hit.point.y > 0.35) out.floating.push(+(y - hit.point.y).toFixed(2));
+    }
+    return out;
+  }, S.top + 0.6);
+  assert.ok(r.onHall >= 8, `${r.onHall} corners of the walkway are on the stairs or the floor`);
+  assert.deepEqual(r.buried, [], 'metres under the steps / floor');
+  assert.deepEqual(r.floating, [], 'metres above the steps / floor');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('桌子放在主殿門樓的地板上：站在地板上，不會陷進去', async () => {
+  const { layout, S } = await layoutWithHallThing(S => ({
+    at: [[S.cx + 2.0, S.near - S.fs * 1.5]],
+    add: (L, [q]) => L.items.push({ id: 'tgate', type: 'table', name: '門樓桌', glyph: '桌', lon: q.lon, lat: q.lat, rot: 0, note: '', staff: [] }),
+  }));
+  const { page, ctx } = await open('?debug', { layout });
+  const g = await page.evaluate(() => { const o = window.__map.objectFor('tgate'); return { x: o.position.x, y: o.position.y, z: o.position.z }; });
+  const floor = await hallFloorBelow(page, g.x, g.z, S.top + 0.6);
+  assert.ok(floor !== null, 'the table is over the gate floor');
+  assert.ok(g.y >= floor - 0.01 && g.y - floor < 0.2, `table stands at ${g.y.toFixed(2)}, floor is ${floor.toFixed(2)}`);
+  await ctx.close();
+});
+
+test('走道一邊超出樓梯：鋪在台階上的部分還是在台階上面', async () => {
+  const { layout, S } = await layoutWithHallThing(S => {
+    // 2 m wide, columns every 0.25 m: the side of the steps falls between two columns, 0.17 m from one of them
+    const x = S.tx1 - 0.42;
+    return {
+      at: [[x, S.far + S.fs * 3], [x, S.near + S.fs * 0.6]],
+      add: (L, ll) => L.paths.push({ id: 'wside', name: '偏一邊', text: '神明專用', style: 'red', width: 2,
+        pts: ll.map(q => [q.lon, q.lat]), note: '', staff: [] }),
+    };
+  });
+  const { page, ctx } = await open('?debug', { layout });
+  const r = await page.evaluate(([fromY, tx0, tx1]) => {
+    const hall = window.__map.buildingGroup('B').getObjectByName('B');
+    hall.updateMatrixWorld(true);
+    const geo = window.__map.objectFor('wside').geometry, P = geo.attributes.position, I = geo.index.array;
+    const ray = new THREE.Raycaster(), A = new THREE.Vector3(), B = new THREE.Vector3(), C = new THREE.Vector3();
+    const out = { checked: 0, buried: [] };
+    for (let t = 0; t < I.length; t += 3) {
+      A.fromBufferAttribute(P, I[t]); B.fromBufferAttribute(P, I[t + 1]); C.fromBufferAttribute(P, I[t + 2]);
+      for (const [a, b, c] of [[1 / 3, 1 / 3, 1 / 3], [0.6, 0.2, 0.2], [0.2, 0.6, 0.2], [0.2, 0.2, 0.6]]) {
+        const q = A.clone().multiplyScalar(a).addScaledVector(B, b).addScaledVector(C, c);
+        const lx = hall.worldToLocal(q.clone()).x;
+        if (lx < tx0 + 0.05 || lx > tx1 - 0.05) continue;    // only points over the steps, right up to their sides
+        ray.set(new THREE.Vector3(q.x, fromY, q.z), new THREE.Vector3(0, -1, 0));
+        const hit = ray.intersectObject(hall, true)[0];
+        if (!hit || hit.face.normal.y < 0.99) continue;      // flat tops of steps and floor only
+        out.checked++;
+        if (q.y < hit.point.y - 0.01) out.buried.push(+(hit.point.y - q.y).toFixed(2));
+      }
+    }
+    return out;
+  }, [S.top + 0.6, S.tx0, S.tx1]);
+  assert.ok(r.checked >= 10, `${r.checked} points over the steps checked`);
+  assert.deepEqual(r.buried.slice(0, 10), [], `${r.buried.length} points are under the steps (metres)`);
   await ctx.close();
 });

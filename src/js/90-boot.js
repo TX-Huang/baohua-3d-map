@@ -35,7 +35,7 @@ if (DEBUG) window.__map = {
   layout: () => JSON.parse(JSON.stringify(LAYOUT)),
   points: () => POINTS.map(({ id, kind, x, y, z, name }) => ({ id, kind, x, y, z, name })),
   screenOf: (x, y, z) => { const s = screenOf(x, y, z); return { x: s.x, y: s.y }; },
-  yAt, groundAt, toLocal,
+  yAt, groundAt, toLocal, toLonLat,
   objectFor: (id) => itemObjs.get(id) || pathObjs.get(id) || null,
   buildingGroup: (id) => bldgGroups[id] || null,
   lookAt: (x, z, dist) => { tween = null; zoomGoal = null; setView({ target: new THREE.Vector3(x, yAt(x, z), z), dist, polar: deg(50), az: camSph().theta }); },
