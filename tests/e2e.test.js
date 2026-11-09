@@ -658,3 +658,121 @@ test('走道一邊超出樓梯：鋪在台階上的部分還是在台階上面',
   assert.deepEqual(r.buried.slice(0, 10), [], `${r.buried.length} points are under the steps (metres)`);
   await ctx.close();
 });
+
+/* ---------------- trees ---------------- */
+// Every trunk and crown in the scene, measured in world metres and matched to its tree in the map data.
+async function treeReport(page) {
+  return page.evaluate(() => {
+    const m = window.__map, T = m.trees, data = window.MAPDATA.trees;
+    T.updateMatrixWorld(true);
+    const trunks = T.getObjectByName('tree-trunks'), crowns = T.children.filter(o => o.name === 'tree-crowns');
+    const M = new THREE.Matrix4(), v = new THREE.Vector3(), pos = new THREE.Vector3(), q = new THREE.Quaternion(), sc = new THREE.Vector3();
+    const key = (x, z) => `${x.toFixed(1)},${z.toFixed(1)}`;
+    const trees = new Map(data.map(([x, z, r]) => [key(x, z), { r, ground: m.yAt(x, z) }]));
+    const measure = (mesh, i) => {
+      mesh.getMatrixAt(i, M); M.premultiply(mesh.matrixWorld); M.decompose(pos, q, sc);
+      const P = mesh.geometry.attributes.position; let lo = Infinity, hi = -Infinity, reach = 0;
+      for (let k = 0; k < P.count; k++) {
+        v.fromBufferAttribute(P, k).applyMatrix4(M);
+        lo = Math.min(lo, v.y); hi = Math.max(hi, v.y); reach = Math.max(reach, Math.hypot(v.x - pos.x, v.z - pos.z));
+      }
+      return { k: key(pos.x, pos.z), lo, hi, reach };
+    };
+    const trunkAt = new Map(), problems = [];
+    if (trunks) for (let i = 0; i < trunks.count; i++) { const t = measure(trunks, i); trunkAt.set(t.k, t); }
+    let nCrowns = 0, tris = 0;
+    for (const mesh of [trunks, ...crowns].filter(Boolean)) {
+      const g = mesh.geometry; tris += (g.index ? g.index.count : g.attributes.position.count) / 3 * mesh.count;
+    }
+    for (const mesh of crowns) for (let i = 0; i < mesh.count; i++) {
+      nCrowns++;
+      const c = measure(mesh, i), t = trunkAt.get(c.k), tree = trees.get(c.k);
+      if (!tree) { problems.push(`crown at ${c.k} has no tree in the data`); continue; }
+      if (c.lo < tree.ground + 1.5) problems.push(`crown at ${c.k} hangs ${(c.lo - tree.ground).toFixed(2)} m above the ground`);
+      if (c.reach > tree.r + 0.02) problems.push(`crown at ${c.k} reaches ${c.reach.toFixed(2)} m, data says ${tree.r}`);
+      if (!t) { problems.push(`crown at ${c.k} has no trunk`); continue; }
+      if (t.lo > tree.ground - 0.2) problems.push(`trunk at ${c.k} starts ${(t.lo - tree.ground).toFixed(2)} m from the ground (floats)`);
+      if (t.hi < c.lo + 0.5) problems.push(`trunk at ${c.k} stops ${(c.lo - t.hi).toFixed(2)} m below its crown`);
+    }
+    const shading = crowns.map(mesh => {
+      const P = mesh.geometry.attributes.position, C = mesh.geometry.attributes.color;
+      if (!C) return null;
+      const vs = []; for (let k = 0; k < P.count; k++) vs.push([P.getY(k), (C.getX(k) + C.getY(k) + C.getZ(k)) / 3]);
+      vs.sort((a, b) => a[0] - b[0]);
+      const n = Math.max(1, Math.floor(vs.length / 4)), mean = (a) => a.reduce((s, x) => s + x[1], 0) / a.length;
+      return { low: mean(vs.slice(0, n)), top: mean(vs.slice(-n)) };
+    });
+    return { nData: data.length, nTrunks: trunks ? trunks.count : 0, nCrowns, problems, shading, tris };
+  });
+}
+
+test('樹：每棵都有樹幹，從地下長進樹冠裡；樹冠離地至少 1.5 公尺，也不會比資料裡的大', async () => {
+  const { page, ctx, errors } = await open('?debug');
+  const r = await treeReport(page);
+  assert.equal(r.nTrunks, r.nData, 'one trunk per tree');
+  assert.equal(r.nCrowns, r.nData, 'one crown per tree');
+  assert.deepEqual(r.problems.slice(0, 10), [], `${r.problems.length} problems`);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('樹：樹冠下面比上面暗，像曬不到太陽', async () => {
+  const { page, ctx } = await open('?debug');
+  const r = await treeReport(page);
+  assert.ok(r.shading.length >= 1, 'has crowns');
+  for (const s of r.shading) {
+    assert.ok(s, 'crown has shading colours');
+    assert.ok(s.low < s.top * 0.85, `bottom ${s.low.toFixed(2)} vs top ${s.top.toFixed(2)}`);
+  }
+  await ctx.close();
+});
+
+test('樹：全部加起來不超過 70 萬個三角形（手機才跑得動）', async () => {
+  const { page, ctx } = await open('?debug');
+  const r = await treeReport(page);
+  assert.ok(r.tris > 0 && r.tris <= 700000, `${r.tris} triangles`);
+  await ctx.close();
+});
+
+test('樹：切到空拍照時樹幹和樹冠都藏起來，切回來又出現', async () => {
+  const { page, ctx } = await open('?debug');
+  const shown = () => page.evaluate(() => {
+    const T = window.__map.trees, out = [];
+    window.__map.scene.traverse(o => { if (/^tree-/.test(o.name)) { let vis = true; for (let p = o; p; p = p.parent) vis = vis && p.visible; out.push(vis); } });
+    return { n: out.length, visible: out.filter(Boolean).length, inGroup: !!T };
+  });
+  const before = await shown();
+  assert.ok(before.inGroup && before.n >= 2, `tree meshes: ${before.n}`);
+  assert.equal(before.visible, before.n);
+  await page.click('#photoToggle');
+  assert.equal((await shown()).visible, 0);
+  await page.click('#photoToggle');
+  assert.equal((await shown()).visible, before.n);
+  await ctx.close();
+});
+
+test('樹：舊手機算不準小數時不畫葉子花紋（才不會變成雜訊），一般手機照畫', async () => {
+  const leafy = (page) => page.evaluate(() => {
+    const m = window.__map, gl = m.renderer.getContext();
+    m.renderer.render(m.scene, m.camera);
+    return { precision: m.renderer.capabilities.precision,
+      leafy: m.renderer.info.programs.some(p => /leafHash/.test(gl.getShaderSource(p.fragmentShader))) };
+  });
+  const normal = await open('?debug');
+  assert.deepEqual(await leafy(normal.page), { precision: 'highp', leafy: true });
+  await normal.ctx.close();
+  // a phone whose GPU has no high-precision floats in pixel shaders
+  const ctx = await browser.newContext({ viewport: { width: 800, height: 600 } });
+  await ctx.addInitScript(() => {
+    for (const C of [WebGLRenderingContext, WebGL2RenderingContext]) {
+      const orig = C.prototype.getShaderPrecisionFormat;
+      C.prototype.getShaderPrecisionFormat = function (shader, type) {
+        return type === this.HIGH_FLOAT ? { rangeMin: 0, rangeMax: 0, precision: 0 } : orig.call(this, shader, type);
+      };
+    }
+  });
+  const old = await open('?debug', { context: ctx });
+  assert.deepEqual(await leafy(old.page), { precision: 'mediump', leafy: false });
+  assert.deepEqual(old.errors, []);
+  await ctx.close();
+});

@@ -30,7 +30,7 @@ layoutRequest.then((raw) => {
 });
 window.addEventListener('hashchange', () => { const id = decodeURIComponent(location.hash.slice(1)); if (byId[id] && id !== activeId) select(id); });
 if (DEBUG) window.__map = {
-  renderer, scene, camera, controls, placePins, tick,
+  renderer, scene, camera, controls, placePins, tick, trees,
   get ready() { return ready; },
   layout: () => JSON.parse(JSON.stringify(LAYOUT)),
   points: () => POINTS.map(({ id, kind, x, y, z, name }) => ({ id, kind, x, y, z, name })),

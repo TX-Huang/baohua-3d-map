@@ -127,7 +127,6 @@ ROADS = [
     dict(id='up', w=4.0, kind='concrete', name='往山頂',
          pts=[(690, 785), (800, 735), (900, 668), (1000, 600), (1120, 500), (1240, 400)]),
 ]
-TREES_FIXED = [(1390, 1170, 50), (455, 865, 40), (290, 742, 26), (500, 850, 22)]
 CARS = [(1515, 1290, '#f4f4f2'), (1530, 1305, '#f4f4f2'), (1545, 1318, '#3a5c9a'), (1560, 1331, '#2b2f33')]
 EDGE_WEST = (100, 935)      # where the main road leaves the model
 EDGE_NE = (1240, 450)       # where the mountain road leaves the model
@@ -286,9 +285,22 @@ for z0 in np.arange(-DEP / 2 + 1, DEP / 2 - 1, SP):
             continue
         rad = rng.uniform(2.1, 3.6)
         trees.append((round(x, 1), round(z, 1), round(rad, 2), round(rng.uniform(0.75, 1.25), 2), int(rng.integers(0, 4))))
-for px_, py_, rr in TREES_FIXED:
-    x, z = p2m(px_, py_)
-    trees.append((round(x, 1), round(z, 1), round(rr * 0.1374 * 0.85, 2), 1.15, 0))
+
+
+# The user asked for clear plazas: no tree stands on a plaza or paved patch, and no crown reaches over one.
+# Filtering after the loop keeps the random sequence, so every other tree stays where it was.
+def edge_dist(x, z, poly):
+    best = 1e9
+    for (ax, az), (bx, bz) in zip(poly, poly[1:] + poly[:1]):
+        ex, ez = bx - ax, bz - az
+        t = min(1, max(0, ((x - ax) * ex + (z - az) * ez) / (ex * ex + ez * ez)))
+        best = min(best, math.hypot(x - ax - ex * t, z - az - ez * t))
+    return best
+
+
+clear = [p['p'] for p in plazas_m] + paved_m
+trees = [t for t in trees
+         if not any(Path(poly).contains_point((t[0], t[1])) or edge_dist(t[0], t[1], poly) < t[2] for poly in clear)]
 print('trees', len(trees))
 
 cars = []

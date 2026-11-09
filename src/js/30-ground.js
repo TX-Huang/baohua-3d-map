@@ -1,20 +1,124 @@
 /* ---------------- trees ---------------- */
+// A tree is a trunk that forks into two limbs, under a crown of overlapping leaf masses. There are four kinds
+// of crown, one per leaf colour, so each reads as its own kind of tree. Sizes come from the map data:
+// r = crown radius in metres, hf = how tall the tree is for its width.
 const TREE_COLS = ['#3e6a39', '#4b7a3f', '#5a8946', '#355f38'];
-const treeGeo = new THREE.IcosahedronGeometry(1, 1);
-const trees = new THREE.InstancedMesh(treeGeo, new THREE.MeshLambertMaterial({ color: 0xffffff }), D.trees.length);
-(function placeTrees() {
-  const m = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), p = new THREE.Vector3(), col = new THREE.Color();
-  let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-  D.trees.forEach(([x, z, r, hf, v], i) => {
-    const hy = r * hf * 1.05;
-    p.set(x, yAt(x, z) + hy + 0.8, z);
-    s.set(r, hy, r);
-    q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), rnd() * Math.PI);
-    m.compose(p, q, s);
-    trees.setMatrixAt(i, m);
-    col.set(TREE_COLS[v]).offsetHSL((rnd() - 0.5) * 0.02, 0, (rnd() - 0.5) * 0.06);
-    trees.setColorAt(i, col);
+// leaf masses [x, y, z, radius], roughly in crown radii; the first one is the middle of the crown
+const CROWN_KINDS = [
+  [[0, 0.75, 0, 0.62], [0.45, 0.6, 0.12, 0.42], [-0.4, 0.62, 0.25, 0.42], [0.05, 0.6, -0.45, 0.42], [-0.08, 1.15, 0.05, 0.45], [0.25, 1.0, 0.3, 0.36]], // round dome
+  [[0, 0.75, 0, 0.52], [0, 1.25, 0, 0.47], [0.32, 0.95, 0.15, 0.36], [-0.3, 1.0, -0.2, 0.35], [0.05, 1.55, 0.05, 0.38]], // tall and narrow
+  [[0, 0.55, 0, 0.5], [0.58, 0.45, 0.15, 0.4], [-0.52, 0.48, -0.1, 0.42], [0.1, 0.42, 0.58, 0.38], [-0.15, 0.45, -0.58, 0.4], [0.05, 0.85, 0.05, 0.38]], // wide, flat-topped
+  [[0, 0.65, 0, 0.52], [0.45, 0.95, 0.2, 0.38], [-0.38, 0.5, -0.3, 0.4], [0.15, 1.25, -0.15, 0.36], [-0.42, 0.98, 0.35, 0.33]], // uneven clumps
+];
+// one closed surface around all the leaf masses: from the crown's middle, each direction goes out to where it
+// leaves the leaf masses (a soft maximum, so the folds between them are rounded, not sharp), plus a few broad
+// bumps. Fitted so the bottom is at y = 0 and the widest reach is exactly 1 crown radius.
+// Shading is baked into vertex colours: darker low down and in the folds.
+function crownGeometry(blobs, rnd) {
+  const ico = new THREE.IcosahedronGeometry(1, 2).attributes.position, seen = new Map(), dirs = [], index = [];
+  for (let i = 0; i < ico.count; i++) {   // weld the corners the icosahedron repeats, so normals come out smooth
+    const k = [ico.getX(i), ico.getY(i), ico.getZ(i)].map(a => Math.round(a * 1e4)).join();
+    if (!seen.has(k)) { seen.set(k, dirs.length); dirs.push(new THREE.Vector3(ico.getX(i), ico.getY(i), ico.getZ(i)).normalize()); }
+    index.push(seen.get(k));
+  }
+  const lumps = Array.from({ length: 5 }, () => [new THREE.Vector3(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).normalize(), 3 + rnd() * 2, rnd() * 6.28]);
+  const cy = blobs[0][1], o = new THREE.Vector3(), P = new Float32Array(dirs.length * 3);
+  dirs.forEach((d, i) => {
+    let sum = 0;
+    for (const [bx, by, bz, br] of blobs) {   // where the ray leaves this leaf mass
+      o.set(-bx, cy - by, -bz);
+      const b = o.dot(d), disc = b * b - o.lengthSq() + br * br;
+      if (disc >= 0) sum += Math.max(0, -b + Math.sqrt(disc)) ** 8;
+    }
+    const t = sum ** (1 / 8) * (1 + 0.05 * lumps.reduce((s, [u, f, ph]) => s + Math.sin(d.dot(u) * f + ph), 0) / lumps.length);
+    P.set([d.x * t, cy + d.y * t, d.z * t], i * 3);
   });
+  let lo = Infinity, reach = 0;
+  for (let i = 0; i < P.length; i += 3) { lo = Math.min(lo, P[i + 1]); reach = Math.max(reach, Math.hypot(P[i], P[i + 2])); }
+  for (let i = 0; i < P.length; i += 3) { P[i] /= reach; P[i + 1] = (P[i + 1] - lo) / reach; P[i + 2] /= reach; }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(P, 3)); g.setIndex(index); g.computeVertexNormals(); g.computeBoundingBox();
+  const top = g.boundingBox.max.y, mid = (cy - lo) / reach, N = g.attributes.normal, C = new Float32Array(P.length), v = new THREE.Vector3();
+  for (let i = 0; i < P.length; i += 3) {
+    const h = P[i + 1] / top, k = i / 3;
+    const out = v.set(P[i], P[i + 1] - mid, P[i + 2]).normalize().dot(o.set(N.getX(k), N.getY(k), N.getZ(k)));
+    const shade = (0.5 + 0.5 * h * h * (3 - 2 * h)) * (0.72 + 0.28 * Math.max(0, out)) * (1 + (rnd() - 0.5) * 0.14);
+    C.set([shade * (1 + 0.05 * h), shade * (1 + 0.03 * h), shade * (1 - 0.06 * h)], i);   // tops catch a warmer light
+  }
+  g.setAttribute('color', new THREE.BufferAttribute(C, 3));
+  return g;
+}
+// trunk and two limbs: widths in crown radii, height 0 to 1, stretched to each tree's trunk length
+function trunkGeometry() {
+  const parts = [new THREE.CylinderGeometry(0.05, 0.085, 0.62, 6, 1, true).translate(0, 0.31, 0)];
+  for (const a of [0.45, -0.45]) parts.push(new THREE.CylinderGeometry(0.022, 0.042, 0.46, 5, 1, true).translate(0, 0.23, 0).rotateZ(-a).translate(0, 0.58, 0));
+  const pos = [], nor = [], idx = [];
+  for (const p of parts) {
+    const base = pos.length / 3;
+    pos.push(...p.attributes.position.array); nor.push(...p.attributes.normal.array);
+    for (const i of p.index.array) idx.push(base + i);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  g.setIndex(idx);
+  return g;
+}
+const trees = new THREE.Group(); trees.name = 'trees';
+(function placeTrees() {
+  const m = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), p = new THREE.Vector3(), col = new THREE.Color(), UP = new THREE.Vector3(0, 1, 0);
+  let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const crownMat = new THREE.MeshLambertMaterial({ vertexColors: true });
+  // leaf clusters: light and dark patches under a metre across, painted per pixel from where the leaves are in the
+  // world (so no two trees match), and each cluster tilted to catch the light on one side (bump shading).
+  // Faded out far away, where a pixel is wider than a cluster and it would shimmer. Left out on GPUs without
+  // high-precision floats: the hash needs them, and would turn to speckle (plain shaded crowns instead).
+  crownMat.extensions = { derivatives: true };
+  crownMat.onBeforeCompile = (sh) => {
+    if (renderer.capabilities.precision !== 'highp') return;
+    sh.vertexShader = 'varying vec3 vLeaf;\n' + sh.vertexShader.replace('#include <project_vertex>', `#include <project_vertex>
+      vec4 leafP = vec4( transformed, 1.0 );
+      #ifdef USE_INSTANCING
+        leafP = instanceMatrix * leafP;
+      #endif
+      vLeaf = ( modelMatrix * leafP ).xyz;`);
+    sh.fragmentShader = `varying vec3 vLeaf;
+      float leafHash( vec3 p ) { p = fract( p * 0.3183099 + 0.1 ); p *= 17.0; return fract( p.x * p.y * p.z * ( p.x + p.y + p.z ) ); }
+      float leafNoise( vec3 x ) {
+        vec3 i = floor( x ), f = fract( x ); f = f * f * ( 3.0 - 2.0 * f );
+        return mix( mix( mix( leafHash( i ), leafHash( i + vec3( 1, 0, 0 ) ), f.x ), mix( leafHash( i + vec3( 0, 1, 0 ) ), leafHash( i + vec3( 1, 1, 0 ) ), f.x ), f.y ),
+                    mix( mix( leafHash( i + vec3( 0, 0, 1 ) ), leafHash( i + vec3( 1, 0, 1 ) ), f.x ), mix( leafHash( i + vec3( 0, 1, 1 ) ), leafHash( i + vec3( 1, 1, 1 ) ), f.x ), f.y ), f.z );
+      }
+` + sh.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
+      float leafNear = 1.0 - smoothstep( 180.0, 450.0, length( vViewPosition ) );
+      float leaf = leafNoise( vLeaf * 1.6 ) * 0.55 + leafNoise( vLeaf * 4.3 + 17.0 ) * 0.45;
+      diffuseColor.rgb *= mix( 1.0, 0.62 + 0.6 * leaf, leafNear );`).replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+      {
+        vec3 dpx = dFdx( - vViewPosition ), dpy = dFdy( - vViewPosition );
+        vec3 r1 = cross( dpy, normal ), r2 = cross( normal, dpx );
+        float det = dot( dpx, r1 ), bump = 0.35 * leafNear;
+        vec3 grad = sign( det ) * ( dFdx( leaf * bump ) * r1 + dFdy( leaf * bump ) * r2 );
+        normal = normalize( abs( det ) * normal - grad );
+      }`);
+  };
+  const counts = CROWN_KINDS.map((_, k) => D.trees.filter(t => t[4] === k).length), used = counts.map(() => 0);
+  const crowns = CROWN_KINDS.map((blobs, k) => new THREE.InstancedMesh(crownGeometry(blobs, rnd), crownMat, counts[k]));
+  const trunks = new THREE.InstancedMesh(trunkGeometry(), new THREE.MeshLambertMaterial({ color: 0xffffff }), D.trees.length);
+  // three.js r147 culls an InstancedMesh by its one model at the origin, not by where the copies stand
+  for (const mesh of crowns) { mesh.name = 'tree-crowns'; mesh.frustumCulled = false; }
+  trunks.name = 'tree-trunks'; trunks.frustumCulled = false;
+  D.trees.forEach(([x, z, r, hf, v], i) => {
+    const ground = yAt(x, z), clear = Math.min(2.6, Math.max(1.6, 0.5 * r * hf)), crownH = crowns[v].geometry.boundingBox.max.y * r * hf;
+    q.setFromAxisAngle(UP, rnd() * Math.PI * 2);
+    m.compose(p.set(x, ground + clear, z), q, s.set(r, r * hf, r));
+    const j = used[v]++;
+    crowns[v].setMatrixAt(j, m);
+    crowns[v].setColorAt(j, col.set(TREE_COLS[v]).offsetHSL((rnd() - 0.5) * 0.03, (rnd() - 0.5) * 0.08, (rnd() - 0.5) * 0.07));
+    // from 0.6 m under the ground (so slopes never show a gap) to halfway up the crown
+    m.compose(p.set(x, ground - 0.6, z), q, s.set(r, 0.6 + clear + 0.45 * crownH, r));
+    trunks.setMatrixAt(i, m);
+    trunks.setColorAt(i, col.set('#3d3128').offsetHSL(0, 0, (rnd() - 0.5) * 0.08));
+  });
+  trees.add(trunks, ...crowns);
 })();
 scene.add(trees);
 
